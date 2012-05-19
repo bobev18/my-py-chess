@@ -58,20 +58,18 @@ class game():
         self.turn = self.white
         self.turn_count = 1
         self.full_notation = '' # quite as the values in hist, but with the count and # + ? !
-        self.logfile = logfile #sys.stdout
+        with open(logfile,'w') as f:
+            self.logfile = logfile #sys.stdout
+         
         #self.log = open(logfile,'w')
 
         #initiate the game cycle
         #self.cycle()
     
     def logit(self,*args):
-        #if self.log == None:
-        #    self.startlog()
-        data = ''
-        for arg in args:
-            data+=str(arg)+' ; '
+        data=' '.join([str(x) for x in args])
         with open(self.logfile,'a') as zlog:
-            zlog.write(data)
+            zlog.write(data+'\n')
 
     def turnset(self):
         if self.turn['col']=='w':
@@ -122,22 +120,13 @@ class game():
         if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=(wval,bval)
         return (wval,bval)
 
-    def AIrecursion(self,boardstate,col,tcol,depth,alpha,beta,sq2exp):
+    def AIrecursion(self,boardstate,selfcol,tcol,depth,alpha,beta,action):
         depthindent=' '*(5-depth)
-        #print('/n/n',depthindent,5*'-','CALL AIrecursion','-'*5,file=self.log)
-        #print(depthindent,'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1],end=' ',file=self.log)
-        #print(depthindent,'boardstate:',boardstate,file=self.log)
-        new_state = board(boardstate)
         #exec_move takes piece object, which to move, and expansion in triplet 'move type', 'destination square', 'notation'
         # we have no use of the piece object, since the new board object creates new piece objects
         # we still need easy way to operate on the piece we want, so we'll use sq2exp = tuple of square of the piece, expansion
-        new_state.exec_move(new_state.piece_by_sq(sq2exp[0]),sq2exp[1])
-        #print('-'*30)
-        #print(new_state.show())
-        #print('new_state.piece_by_sq(sq2exp[0])',new_state.piece_by_sq(sq2exp[0]),'sq2exp[1]',sq2exp[1])
-        #print('sq2exp',sq2exp)
-        #print('playin col:',col)
-                
+        new_state = board(boardstate)
+        new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
         if tcol=='w':
             pieces_set=new_state.whites[:]
             opposite = 'b'
@@ -147,115 +136,96 @@ class game():
 
         turn_in_check = False
         # check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
-        if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0: print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:])
+        if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0:
+            print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
+        if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0:
+            print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
         w_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ][0],'b',new_state.board)
-        if w_in_check and tcol=='w': turn_in_check = True
-        if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0: print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:])
         b_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ][0],'w',new_state.board)
-        if b_in_check and tcol=='b': turn_in_check = True
+        if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
+            turn_in_check = True
 
+        ####################################################################################################################
+        #                                             TERMINATION CONDITION(S)                                             #
+        ####################################################################################################################
         # ignore cut at depth==0 if last turn results in check -- dig deeper
-        if depth <=0 and (sq2exp[1][2].count(capture_sign)==0 or (not w_in_check) and (not b_in_check)):
-            #
-            #
-            # !!! adding sq2exp[1][2].count(capture_sign)==0: got 1000731 rows for in_check expansion!!!
-            #
-            #
-            r= self.AIeval(new_state.board)
-            #print('r',r)
-            # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
+        #if depth <=0 and (sq2exp[1][2].count(capture_sign)==0 or (not w_in_check) and (not b_in_check)):
+        # depth is reached or passed, last move was not capture, and no one is in check
+        if depth <=0 and action['move'][2].count(capture_sign)==0 and not w_in_check and not b_in_check:
+            r = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
             rez = round(r[0]-r[1],3)
-            if col!='w':
+            if selfcol!='w':
                 rez = -rez
-                
-            #print(depthindent,'state value for black',rez,file=self.log)
-            #print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:],'state val',rez,file=self.log)
-            self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:],'state val',rez)
-            return [rez,0]
+            self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',rez)
+            return [rez,0] # [evaluation, num_of_avail_moves_on_next_level]
 
-        #print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'w+',w_in_check,'b+',b_in_check,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:],file=self.log)
-        self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'w+',w_in_check,'b+',b_in_check,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1:])
-        #print(depthindent,'new_state full set:',new_state.fullset(),file=self.log)
-        
+        self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'w+',w_in_check,'b+',b_in_check,'|action:',action)
         moverez = []
         pruning = False
         original_length = 0
+        ####################################################################################################################
+        #                                                    PIECE CYCLE                                                   #
+        ####################################################################################################################
         while not pruning and len(pieces_set)>0 :
             p=pieces_set.pop(0)
-            #
-            # !!!
-            # !!!!!! we cant use verified method as it's dependat on the game object
-            # !!! the first move will be validated against history, but the recursions wont be able to cover it
-            # unless, we pass history events from the game and keep internal track...
-            #
-
-            """
-            if str(p)=='bp@e6' and sq2exp[1:]==[('t', 'g6', 'Qxg6'), 'Rg8']: # : state {'h8': '  ', 'h2': 'wp', 'h3': '  ', 'h1': '  ', 'h6': '  ', 'h7': 'bn', 'h4': '  ', 'h5': '  ', 'd8': '  ', 'a8': 'br', 'd6': '  ', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': '  ', 'g7': 'wr', 'g6': 'wq', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': 'wk', 'g8': 'br', 'c8': '  ', 'c3': '  ', 'c2': 'bq', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wr', 'f2': 'wp', 'f3': 'wn', 'f4': '  ', 'f5': '  ', 'f6': 'bp', 'f7': '  ', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': 'bp', 'b7': '  ', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': '  ', 'a3': 'wp', 'a2': '  ', 'a5': 'bp', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': '  ', 'e4': 'wp', 'e7': '  ', 'e6': 'bp', 'e1': '  ', 'e3': 'wb', 'e2': '  ', 'a4': '  '} [('m', 'e5', 'e5')]
-                #print('new_state:',new_state)
-                #print('new_state full set:',new_state.fullset())
-                expansions=new_state.valids(p,1)
-            else:
-                expansions=new_state.valids(p)
-            """
             expansions=new_state.valids(p)
-            #print(new_state.show(),file=self.log)
-            #print(depthindent,'valids4',p,':',expansions,'     state',new_state.board,file=self.log)
-            if depth <=0 and sq2exp[1][2].count(capture_sign)!=0:
-                original_length += len(expansions)
-                expansions = [ z for z in expansions if z[0] in ['t','+','e'] and z[1]==sq2exp[1][1] ]
-                # i.e. check deeper only captures that take at the same sq as the last vapture
+            original_length += len(expansions)
+            ###----------------------------------------------\
+            ### BELOW ARE REDUCTIONS on sub-depth expansions
+            if depth <=0:
+                # if deepened due to capturing -> allow only further captures on the same square
+                if action['move'][2].count(capture_sign)!=0:
+                    expansions = [ z for z in expansions if z[0] in ['t','+','e'] and z[1]==action['move'][1] ] # i.e. check deeper only captures that take at the same sq as the last vapture
+                else: # if deepened due to being check
+                    reduced_expansions = []
+                    for exp in expansions:
+                        vboard = new_state.virt_move(p,exp)
+                        if tcol =='w':
+                            still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='wk' ][0],'b',vboard)
+                        else:
+                            still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='bk' ][0],'w',vboard)
+                        if not still_in_check:
+                            reduced_expansions.append(exp) # collects moves that escape the current check
 
-            if depth <=0 and sq2exp[1][2].count(capture_sign)==0: #not deeper due to capturing
-                reduced_expansions = []
-                original_length += len(expansions)
-                for exp in expansions:
-                    vboard = new_state.virt_move(p,exp)
-                    if tcol =='w':
-                        still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='wk' ][0],'b',vboard)
-                    else:
-                        still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='bk' ][0],'w',vboard)
-                    if not still_in_check:
-                        reduced_expansions.append(exp)
-
-                #expansions = reduced_expansions
-                # i.e. check deeper only non captures so that only ceck moves will persist in depth
-                ##
-                #
-                #the concept currently fails because at depth 0 we end up with state that can only be resolved by capturing
-                # we have to expand only non capture moves, but that mandates that the next state will also have the check from the previous one.
-                #
-                ##
-                if turn_in_check and len(reduced_expansions)>0:
+                    #if turn_in_check and len(reduced_expansions)>0:
                     expansions = reduced_expansions
-                # the check above will cause sub depth limit expansions, that initially occured due to the last checked move was resulting in check, to
-                #   go deeper using a capture move as long as there are no other alternatives to escape the check
-            
+
+            ####################################################################################################################
+            #                                                   EXPANSION CYCLE                                                #
+            ####################################################################################################################
             while not pruning and len(expansions)>0:
                 e = expansions.pop(0)
                 #print('-- p',p,'e',e)
-                if len(sq2exp)>2:
-                    remnant = sq2exp[2:]
-                else:
-                    remnant = []
-                remnant.insert(0,sq2exp[1][2])
-                remnant.insert(0,e)
-                remnant.insert(0,p.sq)
+                #print 'sq2exp: ',sq2exp #sq2exp:  ['c7', ('m', 'c5', 'c5'), 'h4', 'h5']
+                #if len(sq2exp)>2:
+                #    remnant = sq2exp[2:]
+                #else:
+                #    remnant = []
+                new_action={}
+                new_action['origin']=p.sq
+                new_action['move']=e
+                new_action['path']=action['path']+[action['move'][2]]
+                #was
+                #remnant.insert(0,sq2exp[1][2])# the move destination square 
+                #remnant.insert(0,e)           # the triplet defining the curent expansion
+                #remnant.insert(0,p.sq)        # originating square for the move 'e'
+                #print 'remnant: ',remnant # remnant:  ['f1', ('m', 'c4', 'Bc4'), 'c5', 'h4', 'h5']
                 try:
-                    r = self.AIrecursion(new_state.board,col,opposite,depth-1,alpha,beta,remnant)
+                    r = self.AIrecursion(new_state.board,selfcol,opposite,depth-1,alpha,beta,new_action)
                 except MoveException as err:
                     print('********** Exception args:',str(err.args))
                     print(new_state.show())
-                    print('new_state.piece_by_sq(sq2exp[0])',new_state.piece_by_sq(sq2exp[0]),'sq2exp[1]',sq2exp[1])
-                    print('sq2exp',sq2exp)
-                    print('playin col:',col)
+                    print('new_state.piece_by_sq(action[origin])',new_state.piece_by_sq(action['origin']),'action[move]',action['move'])
+                    print('action',action)
+                    print('playin col:',selfcol)
                     print('-- p',p,'e',e)
                     #print('zr',r)
                     
                 r.append(e)
                 moverez.append(r)
-                
-                #pruning
-                if tcol==col: #MAX in the cycle
+                ###------------\\
+                #    PRUNING
+                if tcol==selfcol: #MAX in the cycle
                     if r[0]>beta:
                         pruning = True
                         #print(depthindent,'pruned r[0]>beta',r[0],'>',beta,'| skipping:',expansions,'+',pieces_set,file=self.log)
@@ -270,17 +240,26 @@ class game():
                     if r[0]<beta:
                         beta = r[0]
 
+            # --- end of expansions cycle ---------------------/
+
+        # ---     end of the pieces cycle     ----------------/
+
         #next if is to cover for reduction of expasions to consequtive take squares, might get misinterpreted as mate
+        # this will not be needed if we use true check for mate instead of rely on the inability to produce valid moves
         if depth<=0 and len(moverez)==0 and original_length>0:
             r= self.AIeval(new_state.board)
             rez = round(r[0]-r[1],3)
-            if col!='w':
+            if selfcol!='w':
                 rez = -rez
             #print(depthindent,'turn col:',tcol,'depth:',depth,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1],'state val',rez,file=self.log)
-            moverez = [[rez,0]]
+            moverez = [[rez,0]] # [evaluation, num_of_avail_moves_on_next_level]
+        # ----- end of reduction <> mate disambiguation
 
+        ####################################################################################################################
+        #                                      CHOOSE BEST RESULT TO RETURN                                                #
+        ####################################################################################################################
         #print(depthindent,'moverez to max/min:',moverez,file=self.log)
-        if tcol==col:
+        if tcol==selfcol:
             if len(moverez)==0:
                 thing = [-99, '#']
                 #print(depthindent,'returning:',thing,file=self.log)
@@ -288,11 +267,9 @@ class game():
                 if thing[0]>alpha:
                     alpha=thing[0]
             else:
-                thing = max(moverez,key=lambda _t: _t[0])
-                
-                somerez = [ z for z in moverez if z[0]==thing[0] ]
-                thing = min(somerez, key=lambda _t: _t[1])
-
+                thing = max(moverez,key=lambda _t: _t[0])  # find max the score
+                somerez = [ z for z in moverez if z[0]==thing[0] ] # select all elements that have the max score
+                thing = min(somerez, key=lambda _t: _t[1]) # @_t[1] we have the number of expansions for the next turn; i.e. minimize opponents options
                 #print(depthindent,'return max moverez:',thing,file=self.log) 
                 self.logit(depthindent,'return max moverez:',thing)
         else:
@@ -329,7 +306,7 @@ class game():
             opposite = 'w'
 
         #set separate log file for each AI move, beacuse otherwise the log gets 0.5GB big
-        templog = self.log
+        templog = self.logfile
         alpha=-999
         beta=999
         pieces_set = self.turnset()[:]
@@ -339,22 +316,24 @@ class game():
             local_rez = []
             possible_moves = self.verified(p)
             if len(possible_moves)>0:
-                with open(self.logfile[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt','w') as f: # this will also close the turn specific log file
-                    while not pruning and len(possible_moves)>0:
-                        e=possible_moves.pop(0)
-                        self.log = f #switch log
-                        rr = self.AIrecursion(self.zboard.board,self.turn['col'],opposite,depth,alpha,beta,(p.sq,e))
-                        rr.append(e)
-                        local_rez.append(rr)
-                        #pruning
-                        if rr[0]>beta:
-                            pruning = True
-                            #print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set,file=self.log)
-                            self.logit('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                            if verbose>0:
-                                print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                        if rr[0]>alpha:
-                            alpha=rr[0]
+                mv_fname = self.logfile[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt'
+                with open(mv_fname,'w') as f: # this will also close the turn specific log file 
+                    pass # this is just to overwritre the previous log.
+                while not pruning and len(possible_moves)>0:
+                    e=possible_moves.pop(0)
+                    self.log = mv_fname #switch log
+                    rr = self.AIrecursion(self.zboard.board,self.turn['col'],opposite,depth,alpha,beta,{'origin':p.sq,'move':e,'path':[]})
+                    rr.append(e)
+                    local_rez.append(rr)
+                    #pruning
+                    if rr[0]>beta:
+                        pruning = True
+                        #print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set,file=self.log)
+                        f.write('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
+                        if verbose>0:
+                            print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
+                    if rr[0]>alpha:
+                        alpha=rr[0]
 
             self.log = templog # return to the main log file
             if verbose>0:
@@ -686,7 +665,7 @@ class game():
                             self.logit('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0]))
             else:
                 start_stamp = time.clock()
-                vm = self.AI_move(self.turn['col'],verbose) #turn_color,verbose ### used to be depth,verbose
+                vm = self.AI_move(aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 run_time = time.clock() - start_stamp
                 validated_move = (vm[0],vm[1][-1])
                 # validated_move[0] is the piece object
