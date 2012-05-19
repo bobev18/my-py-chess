@@ -62,7 +62,6 @@ class game():
             self.logfile = logfile #sys.stdout
          
         #self.log = open(logfile,'w')
-
         #initiate the game cycle
         #self.cycle()
     
@@ -120,13 +119,14 @@ class game():
         if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=(wval,bval)
         return (wval,bval)
 
-    def AIrecursion(self,boardstate,selfcol,tcol,depth,alpha,beta,action):
+    def AIrecursion(self,boardstate,selfcol,tcol,depth,original_depth,alpha,beta,action):
         depthindent=' '*(5-depth)
         #exec_move takes piece object, which to move, and expansion in triplet 'move type', 'destination square', 'notation'
         # we have no use of the piece object, since the new board object creates new piece objects
         # we still need easy way to operate on the piece we want, so we'll use sq2exp = tuple of square of the piece, expansion
         new_state = board(boardstate)
-        new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
+        if action['origin']!='':
+            new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
         if tcol=='w':
             pieces_set=new_state.whites[:]
             opposite = 'b'
@@ -211,7 +211,7 @@ class game():
                 #remnant.insert(0,p.sq)        # originating square for the move 'e'
                 #print 'remnant: ',remnant # remnant:  ['f1', ('m', 'c4', 'Bc4'), 'c5', 'h4', 'h5']
                 try:
-                    r = self.AIrecursion(new_state.board,selfcol,opposite,depth-1,alpha,beta,new_action)
+                    r = self.AIrecursion(new_state.board,selfcol,opposite,depth-1,original_depth,alpha,beta,new_action)
                 except MoveException as err:
                     print('********** Exception args:',str(err.args))
                     print(new_state.show())
@@ -267,10 +267,14 @@ class game():
                 if thing[0]>alpha:
                     alpha=thing[0]
             else:
-                thing = max(moverez,key=lambda _t: _t[0])  # find max the score
-                somerez = [ z for z in moverez if z[0]==thing[0] ] # select all elements that have the max score
-                thing = min(somerez, key=lambda _t: _t[1]) # @_t[1] we have the number of expansions for the next turn; i.e. minimize opponents options
-                #print(depthindent,'return max moverez:',thing,file=self.log) 
+                if original_depth==depth:
+                    thing = sorted(moverez,key=lambda _t: _t[0])
+                    #print 'thing1',thing
+                else:
+                    thing = max(moverez,key=lambda _t: _t[0])  # find max the score
+                    somerez = [ z for z in moverez if z[0]==thing[0] ] # select all elements that have the max score
+                    thing = min(somerez, key=lambda _t: _t[1]) # @_t[1] we have the number of expansions for the next turn; i.e. minimize opponents options
+                    #print(depthindent,'return max moverez:',thing,file=self.log) 
                 self.logit(depthindent,'return max moverez:',thing)
         else:
             if len(moverez)==0:
@@ -280,21 +284,32 @@ class game():
                 if thing[0]<beta:
                     beta=thing[0]
             else:
-                thing = min(moverez,key=lambda _t: _t[0])
-                #print(depthindent,'return min moverez:',thing,file=self.log)
+                if original_depth==depth:
+                    thing = sorted(moverez,key=lambda _t: _t[0],reverse=True)
+                    #print 'thing2',thing
+                else:
+                    thing = min(moverez,key=lambda _t: _t[0])
+                    #print(depthindent,'return min moverez:',thing,file=self.log)
                 self.logit(depthindent,'return min moverez:',thing)
         
             #if type(thing[0]) == list or ('m', 'h3', 'h3') in thing:
             #    print('moverez',moverez)
             #    print('thing',thing)
 
-        thing.insert(1,len(moverez)) # number of all available moves
+        if original_depth!=depth:
+            thing.insert(1,len(moverez)) # number of all available moves
+
+        #!!!! below will break as it's incompleted !!!
+        if original_depth==depth:
+            #thing.append(0,p.sq) # the origination sq for the _initial_ move should be returned, as its used in the validator
+            #print moverez
+            pass
         
         return thing
                 
                 
 
-    def AI_move(self,depth=5,verbose=0):
+    def AI_move(self,init_borad_state,lastmove,depth=5,verbose=0):
         #print('/n/n',5*'-','CALL AI_move','-'*5,file=self.log)
         self.logit('/n/n',5*'-','CALL AI_move','-'*5)
         #print('depth:',depth,file=self.log)
@@ -305,6 +320,51 @@ class game():
         else:
             opposite = 'w'
 
+        lm_origin=lastmove[0][0]
+        #lm_piece = lastmove[0][1]
+        #(filtered[0],(move_type,destination,move))
+        lm_move_triplet=(lastmove[0][1],lastmove[1]) # (piece,(move_type,destination,move))
+        action = {'origin':lm_origin,'move':lastmove[1],'path':[]}
+        #print action
+        #print 'init_borad_state',init_borad_state
+        rrr = self.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
+        #print rr #
+        """[-0.29999999999999999, 19, 18, 0, ('m', 'h5', 'h5'), ('t', 'b5', 'Bxb5'), ('m', 'b5', 'b5')]
+        [-0.26000000000000001, 30, 19, 0, ('m', 'h5', 'h5'), ('t', 'f5', 'exf5'), ('m', 'f5', 'f5')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h5', 'h5')]
+        [0.68000000000000005, 30, 19, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h6', 'h6')]
+        [0.68000000000000005, 31, 27, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'd5', 'd5')]
+        [0.68000000000000005, 30, 27, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'd6', 'd6')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'g5', 'g5')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'g6', 'g6')]
+        [0.68000000000000005, 30, 20, 0, ('m', 'g8', 'Rg8'), ('m', 'd4', 'd4'), ('m', 'h6', 'Nh6')]
+        [0.68000000000000005, 30, 22, 0, ('m', 'g8', 'Rg8'), ('m', 'f3', 'Qf3'), ('m', 'f6', 'Nf6')]
+        [0.68000000000000005, 30, 22, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c5', 'c5')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c6', 'c6')]
+        [0.68000000000000005, 30, 19, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'b6', 'b6')]
+        [0.68000000000000005, 30, 22, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c6', 'Nc6')]
+        [0.68000000000000005, 30, 20, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a6', 'Na6')]
+        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a5', 'a5')]
+        [0.68000000000000005, 30, 19, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a6', 'a6')]
+        [0.68000000000000005, 29, 29, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e5', 'e5')]
+        [0.68000000000000005, 30, 30, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e6', 'e6')]
+        """
+        while rrr:
+            rr = rrr.pop()
+            print 'self.turnset()',self.turnset()
+            for p in self.turnset():
+                # the initial moves are the end of the queue
+                movepath = [x for x in rr[1:] if isinstance(x,tuple)]
+                #print movepath
+                zmove= movepath[-1]
+                print 'zmove',zmove
+                print self.verified(p)
+                if zmove in self.verified(p):
+                    return [p,zmove]
+
+        return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
+        """
         #set separate log file for each AI move, beacuse otherwise the log gets 0.5GB big
         templog = self.logfile
         alpha=-999
@@ -351,6 +411,8 @@ class game():
         #print('decided:',(maxrezkey,rez[maxrezkey]),file=self.log)
         self.logit('decided:',(maxrezkey,rez[maxrezkey]))
         return (maxrezkey,rez[maxrezkey])
+        """
+        
             
     def verified(self,piece):
         #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
@@ -596,11 +658,12 @@ class game():
         #verbose=1 #debug
         new = []
         for x in filtered:
+            #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',x.sq
             exp_ = [z[1] for z in x.expand(board_state)]
             if verbose:
                 self.logit(x,exp_)
             if destination in exp_:
-                new.append(x)
+                new.append((x.sq,x))
         
         filtered = new
 
@@ -616,8 +679,9 @@ class game():
         return (filtered[0],(move_type,destination,move))
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
+        old_board_state = ''
         pieces_count = 32
-        
+        previous_move = None
         if testing != []:
             testing.append('exit')
             human_function = lambda : self.decode_move(testing.pop(0),self.turnset())
@@ -655,8 +719,9 @@ class game():
                     else:
                         #print('mv',mv)
                         #print(' in',self.verified(mv[0]))
-                        if mv[1] in self.verified(mv[0]):
+                        if mv[1] in self.verified(mv[0][1]):
                             validated_move = mv
+                            previous_move = mv
                         else:
                             print('notation was correct, but move is invalid')
                             print('move',mv[1])
@@ -665,13 +730,18 @@ class game():
                             self.logit('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0]))
             else:
                 start_stamp = time.clock()
-                vm = self.AI_move(aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
+                #print previous_move
+                #print 'old_board_state',old_board_state
+                vm = self.AI_move(old_board_state,previous_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
+                previous_move = vm[1]
+                #returns (bp@f7, [0.64000000000000001, 30, 19, 38, 0, ('m', 'f3', 'Qf3'), ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]))
                 run_time = time.clock() - start_stamp
-                validated_move = (vm[0],vm[1][-1])
+                validated_move = [['',vm[0]],vm[1]] #?? how shall we trully validate ??
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
-                print('AI:',validated_move,' completed in:',run_time)
-                self.logit('AI:',validated_move)
+                print('AI:',vm,' completed in:',run_time)
+                self.logit('AI:',vm)
+                
 
             #if verbose>0:
             #    print('validated_move',validated_move)
@@ -679,8 +749,13 @@ class game():
 
             if not eksit and len(validated_move)>0:
                 #turn_time = now - stamp
+
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                old_board_state = self.zboard.board.copy()
+                #print 'creation',old_board_state
                 #execute move
-                self.zboard.exec_move(validated_move[0],validated_move[1])
+                print validated_move
+                self.zboard.exec_move(validated_move[0][1],validated_move[1])
 
                 #memory reuse
                 re_count = 64 - ''.join(self.zboard.board.values()).count('  ')
@@ -702,7 +777,8 @@ class game():
                 
                 #sq_in_check(self,sq,by_col,b_state='',verbose=0):
                 check = self.zboard.sq_in_check(kp.sq,self.turn['col'])
-                add_notation = validated_move[1][2]
+                #print 'prior to notation',validated_move
+                add_notation = validated_move[1][2] 
                 if check:
                     add_notation += '+'
                     

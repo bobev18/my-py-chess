@@ -397,7 +397,7 @@ class boardTest(unittest.TestCase):
         |wr|wn|wb|wq|wk|wb|  |wr|
         """
         #print(zgame.show())
-        self.assertEqual((zgame.zboard.piece_by_sq('h7'),('p','h8','h8Q')),zgame.decode_move('h8Q',zgame.turnset()))
+        self.assertEqual((('h7',zgame.zboard.piece_by_sq('h7')),('p','h8','h8Q')),zgame.decode_move('h8Q',zgame.turnset()))
         self.assertEqual((zgame.zboard.piece_by_sq('h7'),('+','g8','hxg8N')),zgame.decode_move('hxg8N',zgame.turnset()))
         #print(zgame.decode_move('Rxh7',zgame.turnset())) # cant promote to King
         self.assertRaises(chesslib.MoveException, zgame.decode_move, '999. b8',zgame.turnset())  # no pawn to reach b8
@@ -407,8 +407,6 @@ class boardTest(unittest.TestCase):
         #e.p.
         self.assertEqual((zgame.zboard.piece_by_sq('g5'),('e','f6','gxf6')),zgame.decode_move('gxf6',zgame.turnset()))
 
-        zgame.closelog()
-        
     """        
     def test_game_cycle_n_mate(self):
         zgame = chesslib.game()
@@ -450,7 +448,6 @@ class boardTest(unittest.TestCase):
         #zgame.zboard.piecefy({'h8': 'br', 'h2': 'wp', 'h3': '  ', 'h1': '  ', 'h6': '  ', 'h7': 'bn', 'h4': '  ', 'h5': 'wq', 'd8': '  ', 'a8': 'br', 'd6': '  ', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bp', 'g6': 'bn', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': 'wk', 'g8': '  ', 'c8': '  ', 'c3': '  ', 'c2': 'bq', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wr', 'f2': 'wp', 'f3': 'wn', 'f4': '  ', 'f5': '  ', 'f6': 'bp', 'f7': 'bk', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': 'bp', 'b7': '  ', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': '  ', 'a3': 'wp', 'a2': '  ', 'a5': 'bp', 'e8': '  ', 'a7': '  ', 'a6': '  ', 'e5': '  ', 'e4': 'wp', 'e7': '  ', 'e6': 'bp', 'e1': '  ', 'e3': 'wb', 'e2': '  ', 'a4': '  '})
         zgame.cycle(aidepth=3)
         #print('raboti li',file=zgame.log)
-        zgame.closelog()
         #compile the lib!
         
         
