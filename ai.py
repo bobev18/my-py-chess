@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import re, sys, time
 
-#global max_eval_memory_size
-#max_eval_memory_size = 150000
+import re#, sys
+global max_eval_memory_size
+max_eval_memory_size = 150000
 global capture_sign
-capture_sign = 'x'
-"""
+capture_sign = 'x' # this one should become class init parameter
 global pvalues
 pvalues = {'p':1.0,'r':5.0,'n':3.0,'b':3.0,'q':10.0,'k':0.0,' ':0.0}
 global sqvalues
@@ -17,10 +16,10 @@ sqvalues = { 'a8':0.01, 'b8':0.01, 'c8':0.01, 'd8':0.01, 'e8':0.01, 'f8':0.01, '
              'a3':0.01, 'b3':0.02, 'c3':0.03, 'd3':0.03, 'e3':0.03, 'f3':0.03, 'g3':0.02, 'h3':0.01,
              'a2':0.01, 'b2':0.02, 'c2':0.02, 'd2':0.02, 'e2':0.02, 'f2':0.02, 'g2':0.02, 'h2':0.01,
              'a1':0.01, 'b1':0.01, 'c1':0.01, 'd1':0.01, 'e1':0.01, 'f1':0.01, 'g1':0.01, 'h1':0.01,}
-"""
-#global evaluated
-#evaluated = {}
 
+global evaluated
+evaluated = {}
+"""
 #const
 plainboardinit = {'a8':'br', 'b8':'bn', 'c8':'bb', 'd8':'bq', 'e8':'bk', 'f8':'bb', 'g8':'bn', 'h8':'br',
                  'a7':'bp', 'b7':'bp', 'c7':'bp', 'd7':'bp', 'e7':'bp', 'f7':'bp', 'g7':'bp', 'h7':'bp',
@@ -30,7 +29,7 @@ plainboardinit = {'a8':'br', 'b8':'bn', 'c8':'bb', 'd8':'bq', 'e8':'bk', 'f8':'b
                  'a3':'  ', 'b3':'  ', 'c3':'  ', 'd3':'  ', 'e3':'  ', 'f3':'  ', 'g3':'  ', 'h3':'  ',
                  'a2':'wp', 'b2':'wp', 'c2':'wp', 'd2':'wp', 'e2':'wp', 'f2':'wp', 'g2':'wp', 'h2':'wp',
                  'a1':'wr', 'b1':'wn', 'c1':'wb', 'd1':'wq', 'e1':'wk', 'f1':'wb', 'g1':'wn', 'h1':'wr',}
-
+"""
 """
 def sq2pos(sq):
     x = ord(sq[0])-96
@@ -50,20 +49,20 @@ def p2s(xy):
 #from piece import piece
 from board import board
 from board import MoveException
-from ai import AI
 
-class game():
-    def __init__(self,wplayer='human',bplayer='human',clock=60*60,logfile='d:\\temp\\chesslog.txt'):
+class AI():
+    def __init__(self,logfile='d:\\temp\\delme.txt'):#self,wplayer='human',bplayer='human',clock=60*60,logfile='d:\\temp\\chesslog.txt'):
+        """
         self.zboard = board(plainboardinit)
         self.white = {'col':'w', 'player':wplayer, 'time':clock, 'hist': [], 'is_in_check':False}
         self.black = {'col':'b', 'player':bplayer, 'time':clock, 'hist': [], 'is_in_check':False}
         self.turn = self.white
         self.turn_count = 1
-        self.ai = AI()
         self.full_notation = '' # quite as the values in hist, but with the count and # + ? !
+        """
+        self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
         with open(logfile,'w') as f:
             self.logfile = logfile #sys.stdout
-         
         #self.log = open(logfile,'w')
         #initiate the game cycle
         #self.cycle()
@@ -73,6 +72,13 @@ class game():
         with open(self.logfile,'a') as zlog:
             zlog.write(data+'\n')
 
+    def clean_records(self,current_count):
+        to_del = [ k for k in evaluated.keys() if 64-k.count('  ')>current_count]
+        for d in to_del:
+            del evaluated[d]
+        #this is a good spot to load from pickle records for pieces_count-5
+
+    """
     def turnset(self):
         if self.turn['col']=='w':
             return self.zboard.whites
@@ -101,6 +107,7 @@ class game():
                     print('erroneous move',err.args)
             else:
                 mv = inp[1:]
+
         return mv #returns move or command
     """
     def AIeval(self,board_state):
@@ -108,15 +115,18 @@ class game():
         if hashstate in evaluated.keys():
             return evaluated[hashstate]
         
-        wval=bval= 0.0
+        wval= 0.0
+        bval= 0.0
         for sq in board_state:
-            psq = board_state[sq]
+            psq = board_state[sq]#the piece at sq
             if psq[0]=='w':
                 wval+=pvalues[psq[1]]
                 wval+=sqvalues[sq]
-            else:
+            elif psq[0]=='b':
                 bval+=pvalues[psq[1]]
                 bval+=sqvalues[sq]
+            else:
+                pass
 
         if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=(wval,bval)
         return (wval,bval)
@@ -309,8 +319,8 @@ class game():
         
         return thing
                 
-    """            
-
+                
+    """
     def AI_move(self,init_borad_state,lastmove,depth=5,verbose=0):
         #print('/n/n',5*'-','CALL AI_move','-'*5,file=self.log)
         self.logit('/n/n',5*'-','CALL AI_move','-'*5)
@@ -329,12 +339,9 @@ class game():
         action = {'origin':lm_origin,'move':lastmove[1],'path':[]}
         #print action
         #print 'init_borad_state',init_borad_state
-        rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
-        ######
-        ## getting all the moves is needed in torder to validate the history related moves (self.verified uses self.black['hist'])
-        ## TODO: pass parameter in to keep track of that validation (self.verified) ((could be func))
+        rrr = self.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
         #print rr #
-        """[-0.29999999999999999, 19, 18, 0, ('m', 'h5', 'h5'), ('t', 'b5', 'Bxb5'), ('m', 'b5', 'b5')]
+        \"""[-0.29999999999999999, 19, 18, 0, ('m', 'h5', 'h5'), ('t', 'b5', 'Bxb5'), ('m', 'b5', 'b5')]
         [-0.26000000000000001, 30, 19, 0, ('m', 'h5', 'h5'), ('t', 'f5', 'exf5'), ('m', 'f5', 'f5')]
         [0.68000000000000005, 30, 21, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h5', 'h5')]
         [0.68000000000000005, 30, 19, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h6', 'h6')]
@@ -354,74 +361,22 @@ class game():
         [0.68000000000000005, 30, 19, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a6', 'a6')]
         [0.68000000000000005, 29, 29, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e5', 'e5')]
         [0.68000000000000005, 30, 30, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e6', 'e6')]
-        """
-        zmax=max(rrr,key=lambda z: z[0])
-        tmp = [x for x in rrr if x[0]==zmax[0]]
-        if len(tmp)>1:
-            rrr = sorted(tmp,key=lambda _t: _t[1],reverse=True)
+        \"""
         while rrr:
             rr = rrr.pop()
+            print 'self.turnset()',self.turnset()
             for p in self.turnset():
                 # the initial moves are the end of the queue
                 movepath = [x for x in rr[1:] if isinstance(x,tuple)]
                 #print movepath
                 zmove= movepath[-1]
-                #print 'zmove',zmove
-                #print self.verified(p)
+                print 'zmove',zmove
+                print self.verified(p)
                 if zmove in self.verified(p):
                     return [p,zmove]
 
         return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
-        """
-        #set separate log file for each AI move, beacuse otherwise the log gets 0.5GB big
-        templog = self.logfile
-        alpha=-999
-        beta=999
-        pieces_set = self.turnset()[:]
-        pruning = False
-        while not pruning and len(pieces_set)>0 :
-            p = pieces_set.pop(0)
-            local_rez = []
-            possible_moves = self.verified(p)
-            if len(possible_moves)>0:
-                mv_fname = self.logfile[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt'
-                with open(mv_fname,'w') as f: # this will also close the turn specific log file 
-                    pass # this is just to overwritre the previous log.
-                while not pruning and len(possible_moves)>0:
-                    e=possible_moves.pop(0)
-                    self.log = mv_fname #switch log
-                    rr = self.AIrecursion(self.zboard.board,self.turn['col'],opposite,depth,alpha,beta,{'origin':p.sq,'move':e,'path':[]})
-                    rr.append(e)
-                    local_rez.append(rr)
-                    #pruning
-                    if rr[0]>beta:
-                        pruning = True
-                        #print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set,file=self.log)
-                        f.write('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                        if verbose>0:
-                            print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                    if rr[0]>alpha:
-                        alpha=rr[0]
-
-            self.log = templog # return to the main log file
-            if verbose>0:
-                print('p:',p,'     -> ',local_rez)
-            #print('p:',p,'     -> ',local_rez,file=self.log)
-            self.logit('p:',p,'     -> ',local_rez)
-
-            if len(local_rez)>0:
-                rez[p]=max(local_rez,key=lambda _t: _t[0])
-
-        maxrezkey = max(rez,key=lambda _t: rez[_t][0])
-        if verbose>0:
-            #print('rez:',rez)
-            print('decided:',(maxrezkey,rez[maxrezkey]))
-        #print('decided:',(maxrezkey,rez[maxrezkey]),file=self.log)
-        self.logit('decided:',(maxrezkey,rez[maxrezkey]))
-        return (maxrezkey,rez[maxrezkey])
-        """
         
-            
     def verified(self,piece):
         #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
         self.logit('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece)
@@ -569,16 +524,13 @@ class game():
             #king side castle
             kp = [ z for z in piece_set if z.type == 'k' ][0]
             destination = 'g'+kp.sq[1] #kp.sq[1] - the rank of king
-            #print "RETURNING1:",(kp,('c',destination,move))
-            #return (kp,('c',destination,move))
-            return ((kp.sq,kp),('c',destination,move))
+            return (kp,('c',destination,move))
 
         if zmove.count('O') == 3 or zmove.count('0') == 3:
             #queen side castle
             kp = [ z for z in piece_set if z.type == 'k' ][0]
             destination = 'c'+kp.sq[1] #kp.sq[1] - the rank of king
-            #print "RETURNING2:",(kp,('c',destination,move))
-            return ((kp.sq,kp),('c',destination,move))
+            return (kp,('c',destination,move))
 
         
         #find piece type
@@ -588,7 +540,7 @@ class game():
                piece_type = pz
         
         #filtered = [x for x in piece_set if x.type == piece_type.lower()]
-        filtered = [(x.sq,x) for x in piece_set if x.type == piece_type.lower()]
+        filtered = [x for x in piece_set if x.type == piece_type.lower()]
 
         if len(filtered)==0:
             raise MoveException('no piece of the needed type ('+piece_type.lower()+') is found in the piece set')
@@ -633,7 +585,6 @@ class game():
         if verbose>0:
             self.logit('move_type',move_type)
         if len(filtered)==1:
-            #print "RETURNING3:",(filtered[0],(move_type,destination,move))
             return (filtered[0],(move_type,destination,move))
 
         #find if the move has disambiguation
@@ -657,27 +608,25 @@ class game():
                 
         if disambiguation != '':
             if disambiguation in [chr(x) for x in range(97,105)]: #disambiguation by column
-                filtered = [ x for x in filtered if disambiguation == x[1].sq[0]]
+                filtered = [ x for x in filtered if disambiguation == x.sq[0]]
             else: #disambiguation by rank
-                filtered = [ x for x in filtered if disambiguation == x[1].sq[1]]
+                filtered = [ x for x in filtered if disambiguation == x.sq[1]]
 
             if len(filtered)==0:
                 raise MoveException('no piece matching the disambiguation ('+disambiguation+') is found in the piece set')
             if len(filtered)==1:
-                #print "RETURNING4:",(filtered[0],(move_type,destination,move))
                 return (filtered[0],(move_type,destination,move))
             
         #filter by destination
-        if verbose>0:
-            self.logit('state:',board_state)
+        #verbose=1 #debug
         new = []
         for x in filtered:
             #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',x.sq
-            exp_ = [z[1] for z in x[1].expand(board_state)]
+            exp_ = [z[1] for z in x.expand(board_state)]
             if verbose:
                 self.logit(x,exp_)
             if destination in exp_:
-                new.append(x)
+                new.append((x.sq,x))
         
         filtered = new
 
@@ -690,7 +639,6 @@ class game():
         if verbose >0:
             self.logit('result:',(filtered[0],(move_type,destination,move)))
 
-        #print "RETURNING5:",(filtered[0],(move_type,destination,move))
         return (filtered[0],(move_type,destination,move))
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
@@ -733,28 +681,16 @@ class game():
                         validated_move = ''
                     else:
                         #print('mv',mv)
-
-                        #enter your move: Nxd4
-                        #(('f3', wn@f3), ('t', 'd4', 'Nxd4')))
-                        #((kp.sq, kp),  ('c', destination, move)))
-                        # in [('m', 'g1', 'Ng1'), ('m', 'h4', 'Nh4'), ('m', 'd2', 'Nd2'), ('t', 'd4', 'Nxd4'), ('t', 'e5', 'Nxe5')]
-                        """
-                        try:
-                            print ' in',self.verified(mv[0][1])
-                        except AttributeError as e:
-                            print mv[0],e.args
-                            # (wn@c3, ('m', 'd5', 'Nd5'))
-                        """    
-                            
+                        #print(' in',self.verified(mv[0]))
                         if mv[1] in self.verified(mv[0][1]):
                             validated_move = mv
                             previous_move = mv
                         else:
-                            if verbose>0:
-                                print('notation was correct, but move is invalid')
-                                print('move',mv[1])
-                                print('allowed moves',self.verified(mv[0][1]))
-                            self.logit('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0][1]))
+                            print('notation was correct, but move is invalid')
+                            print('move',mv[1])
+                            print('allowed moves',self.verified(mv[0]))
+                            #print('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0]),file=self.log)
+                            self.logit('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0]))
             else:
                 start_stamp = time.clock()
                 #print previous_move
@@ -766,8 +702,7 @@ class game():
                 validated_move = [['',vm[0]],vm[1]] #?? how shall we trully validate ??
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
-                if verbose >0:
-                    print('AI:',vm,' completed in:',run_time)
+                print('AI:',vm,' completed in:',run_time)
                 self.logit('AI:',vm)
                 
 
@@ -782,19 +717,16 @@ class game():
                 old_board_state = self.zboard.board.copy()
                 #print 'creation',old_board_state
                 #execute move
-                if verbose >0:
-                    print validated_move
-
+                print validated_move
                 self.zboard.exec_move(validated_move[0][1],validated_move[1])
 
                 #memory reuse
                 re_count = 64 - ''.join(self.zboard.board.values()).count('  ')
                 if pieces_count != re_count:
                     pieces_count = re_count
-                    self.ai.clean_records(re_count)
-                    #to_del = [ k for k in evaluated.keys() if 64-k.count('  ')>re_count]
-                    #for d in to_del:
-                    #    del evaluated[d]
+                    to_del = [ k for k in evaluated.keys() if 64-k.count('  ')>re_count]
+                    for d in to_del:
+                        del evaluated[d]
                     #this is a good spot to load from pickle records for pieces_count-5
                 
                 self.turn['hist'].append(validated_move[1])  #  add move to hist
@@ -845,3 +777,4 @@ class game():
                 return '1-0'
 
         return 'exit'
+    """

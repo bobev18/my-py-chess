@@ -2,32 +2,56 @@ my-py-chess
 ===========
 
 basic chess featuring move validation and stupid AI
-
-#TO DO:
-# -1. write the AI
-# -1.1 AI needs tweaking
-# -1.1.1 Optimize speed
-# -1.1.2 Better the evaluation
-# 1. write the clock function - it will help tweaking the AI
-# 2. create function that converts a game notation list of moves -- i.e. split()
-# 3. Add disambiguation after the expand function - check for repeating notations when merging piece based expansion list - if any - add flank/row
-#           not tested
-# 4. 
-
-# * maybe rewrite the move_decode using reg ex
-# * after reaching some completeness, copy the board class & rewrite to use only states, or only pieces, and test AI timing
-#
-# DESIGN DECISION reasoning:
-#  Decision = keep self.board = board_state as variable of the board class, although it can be calculated from the pieces list
-#  Reason(s)= we can easily replace the variable with a function, that does the calculation and returns the same value,
-#             however the majority of the time the value needs to be passed without changes i.e. we will be cycling a
-#             calcualtion and getting the same result every time we pass the board_state to a method. The additional memory cost is
-#             2chars per square => 2bytes*64sq  = 128bytes. Eventually once we have the recursion in place, we can modify the class
-#             and test to compare the productivity of the two implementations. For now we will keep the extra variable as it makes it
-#             simpler to read & write the code.
-
-# hist
-# castle relevant history + last move = {'sw': True, 'nw': True, 'ne': True, 'se': True, 'wk': True, 'bk':True, 'last': 'g5'}
-#  !!! e.p. verification of the last move == 'g5' is insufficient since it might be result of g6g5 and not only g7g5 !!!
-#             done, but not tested!
 ###################################################
+
+So far:
+ - worked with unittest, and build good set of tests
+ - basic AI in place - playable at search depth 3 (pushing it at 4 = 2 moves for each player (midgame goes to 1.5h move time))
+   = uses pruning and cache for evaluated states, but no real optimisation was added i.e. could brush good deal once ready
+   = AI not smart but somewhat resilient
+   = subdepth search for check & capture positions -- that actually adds the vast overhead on search. Prior to adding this, depth 4 was playable
+ - various tasks completed:
+   added clock on AI moves
+   history could be feeded as game sequence
+   added disambiguation in the expand function
+   fixed: error on certain returns of the verify method were returning move representation (a,(c,d,e)) instead of the new ((a,b),(c,d,e))
+
+TODOs:
+ - Main
+*  + change the structure returned by the validation from ((a,b),(c,d,e)) to single tuple or dict
+   = figure out a way to do more encapsulation on the classes
+*  = review and adjust naming conventions, clean up of commented out code
+   = show move count
+   = add help instructions
+   = undo
+   = add ?stats to show mem size (&usage)
+   (= prep AI vs AI mode, which will be used for (speed) testing)
+   = push/pull to text -> easy way to restore last state
+     ~ representation should be lib independant i.e. standard algebric notation
+   = add the clock to the human player too
+   + maybe rewrite the move_decode using reg ex (check with gives better speed)
+*  + rewrite board class & scrap piece class. compare AI timing (currently 
+
+ - the AI
+   = add call count on the recursion calls and sub depth recursion calls
+*  = fix AI logs + add option to manage detailness of the AI logs (detailed are needed only for analysis of the evaluation func)
+   = add option for search cut based on time
+   = verbose & time the main search tree branches
+   = Improve evaluation
+*    ~ pass markers on history dependant moves
+     ~ hit heat pattern
+   = Optimize speed
+     ~ etudes and endgame by the book
+     ~ AI eval to return func?
+     ~ replace ifs with trys
+
+ - Testing
+   = add testing on the disambiguation after the expand
+   = add basic AI tests. Just eval on predefined boardstate with couple of different depth settings for the AI
+     ~ state with no check/capture, with key move on depth 4
+     ~ state with check - with key move beyond depth 4
+     ~ capture collision 
+
+ - Conceptual
+   = extract all log functionality to class/decorators
+   = experiment with dynamic switch of classes - save game state, init new class objects, load state
