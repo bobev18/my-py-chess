@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import re#, sys
-global max_eval_memory_size
+#global max_eval_memory_size
 max_eval_memory_size = 150000
-global capture_sign
+#global capture_sign
 capture_sign = 'x' # this one should become class init parameter
-global pvalues
+#global pvalues
 pvalues = {'p':1.0,'r':5.0,'n':3.0,'b':3.0,'q':10.0,'k':0.0,' ':0.0}
-global sqvalues
+#global sqvalues
 sqvalues = { 'a8':0.01, 'b8':0.01, 'c8':0.01, 'd8':0.01, 'e8':0.01, 'f8':0.01, 'g8':0.01, 'h8':0.01,
              'a7':0.01, 'b7':0.02, 'c7':0.02, 'd7':0.02, 'e7':0.02, 'f7':0.02, 'g7':0.02, 'h7':0.01,
              'a6':0.01, 'b6':0.02, 'c6':0.03, 'd6':0.03, 'e6':0.03, 'f6':0.03, 'g6':0.02, 'h6':0.01,
@@ -17,56 +17,48 @@ sqvalues = { 'a8':0.01, 'b8':0.01, 'c8':0.01, 'd8':0.01, 'e8':0.01, 'f8':0.01, '
              'a2':0.01, 'b2':0.02, 'c2':0.02, 'd2':0.02, 'e2':0.02, 'f2':0.02, 'g2':0.02, 'h2':0.01,
              'a1':0.01, 'b1':0.01, 'c1':0.01, 'd1':0.01, 'e1':0.01, 'f1':0.01, 'g1':0.01, 'h1':0.01,}
 
-global evaluated
+#global evaluated
 evaluated = {}
-"""
-#const
-plainboardinit = {'a8':'br', 'b8':'bn', 'c8':'bb', 'd8':'bq', 'e8':'bk', 'f8':'bb', 'g8':'bn', 'h8':'br',
-                 'a7':'bp', 'b7':'bp', 'c7':'bp', 'd7':'bp', 'e7':'bp', 'f7':'bp', 'g7':'bp', 'h7':'bp',
-                 'a6':'  ', 'b6':'  ', 'c6':'  ', 'd6':'  ', 'e6':'  ', 'f6':'  ', 'g6':'  ', 'h6':'  ',
-                 'a5':'  ', 'b5':'  ', 'c5':'  ', 'd5':'  ', 'e5':'  ', 'f5':'  ', 'g5':'  ', 'h5':'  ',
-                 'a4':'  ', 'b4':'  ', 'c4':'  ', 'd4':'  ', 'e4':'  ', 'f4':'  ', 'g4':'  ', 'h4':'  ',
-                 'a3':'  ', 'b3':'  ', 'c3':'  ', 'd3':'  ', 'e3':'  ', 'f3':'  ', 'g3':'  ', 'h3':'  ',
-                 'a2':'wp', 'b2':'wp', 'c2':'wp', 'd2':'wp', 'e2':'wp', 'f2':'wp', 'g2':'wp', 'h2':'wp',
-                 'a1':'wr', 'b1':'wn', 'c1':'wb', 'd1':'wq', 'e1':'wk', 'f1':'wb', 'g1':'wn', 'h1':'wr',}
-"""
-"""
-def sq2pos(sq):
-    x = ord(sq[0])-96
-    y = int(sq[1:])
-    return x,y
 
-def pos2sq(x,y):
-    if x<1 or x>8 or y<1 or y>8: return 'n/a'
-    return chr(96+x)+str(y)
+def AIeval(board_state):
+    hashstate = ''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
+    if hashstate in evaluated.keys():
+        return evaluated[hashstate]
+    
+    handy = lambda sq: pvalues[board_state[sq][1]]+sqvalues[sq]
+    """
+    wval= 0.0
+    bval= 0.0
+    for sq in board_state:
+        if board_state[sq][0]=='w':
+            wval+=handy(sq)
+        elif board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
+            bval+=handy(sq)
+        else: 
+            pass
+    """
 
-def p2s(xy):
-    x,y=xy
-    if x<1 or x>8 or y<1 or y>8: return 'n/a'
-    return chr(96+x)+str(y)
+    val= 0.0
+    for sq in board_state.keys():
+        if board_state[sq][0]=='w':
+            val+=handy(sq)
+        elif board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
+            val-=handy(sq)
+        else: 
+            pass
 
-"""
-#from piece import piece
+    if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=val
+    return val
+
 from board import board
 from board import MoveException
 
 class AI():
     def __init__(self,logfile='d:\\temp\\delme.txt'):#self,wplayer='human',bplayer='human',clock=60*60,logfile='d:\\temp\\chesslog.txt'):
-        """
-        self.zboard = board(plainboardinit)
-        self.white = {'col':'w', 'player':wplayer, 'time':clock, 'hist': [], 'is_in_check':False}
-        self.black = {'col':'b', 'player':bplayer, 'time':clock, 'hist': [], 'is_in_check':False}
-        self.turn = self.white
-        self.turn_count = 1
-        self.full_notation = '' # quite as the values in hist, but with the count and # + ? !
-        """
         self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
         with open(logfile,'w') as f:
             self.logfile = logfile #sys.stdout
-        #self.log = open(logfile,'w')
-        #initiate the game cycle
-        #self.cycle()
-    
+
     def logit(self,*args):
         data=' '.join([str(x) for x in args])
         with open(self.logfile,'a') as zlog:
@@ -77,38 +69,6 @@ class AI():
         for d in to_del:
             del evaluated[d]
         #this is a good spot to load from pickle records for pieces_count-5
-
-    """
-    def turnset(self):
-        if self.turn['col']=='w':
-            return self.zboard.whites
-        else:
-            return self.zboard.blacks
-
-    def show(self):
-        # shows the state of the game
-        rez = self.zboard.show()+'\n'
-        rez += 'on turn: '+self.turn['col']+' || remaining time: '+str(self.turn['time']) +'\n'
-        if self.turn['is_in_check']:
-            rez += 'player is in check. possible moves:\n'+str(self.verified([ z for z in self.turnset() if z.type=='k' ][0])) +'\n'
-        else:
-            rez += 'pieces at disposal:\n'+str(self.turnset()) +'\n'
-        return rez
-        
-    def prompt_human_move(self):
-        self.show()
-        mv = None
-        while mv==None:
-            inp = raw_input('enter your move: ')
-            if inp[0] != '?':
-                try:
-                    mv = self.decode_move(inp,self.turnset())
-                except MoveException as err:
-                    print('erroneous move',err.args)
-            else:
-                mv = inp[1:]
-
-        return mv #returns move or command
     """
     def AIeval(self,board_state):
         hashstate = ''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
@@ -122,23 +82,21 @@ class AI():
             if psq[0]=='w':
                 wval+=pvalues[psq[1]]
                 wval+=sqvalues[sq]
-            elif psq[0]=='b':
+            else:# psq[0]=='b':
                 bval+=pvalues[psq[1]]
                 bval+=sqvalues[sq]
-            else:
-                pass
-
         if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=(wval,bval)
         return (wval,bval)
-
+    """
+    
     def AIrecursion(self,boardstate,selfcol,tcol,depth,original_depth,alpha,beta,action):
         depthindent=' '*(5-depth)
         #exec_move takes piece object, which to move, and expansion in triplet 'move type', 'destination square', 'notation'
         # we have no use of the piece object, since the new board object creates new piece objects
         # we still need easy way to operate on the piece we want, so we'll use sq2exp = tuple of square of the piece, expansion
         new_state = board(boardstate)
-        if action['origin']!='':
-            new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
+        #if action['origin']!='':
+        new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
         if tcol=='w':
             pieces_set=new_state.whites[:]
             opposite = 'b'
@@ -164,10 +122,10 @@ class AI():
         #if depth <=0 and (sq2exp[1][2].count(capture_sign)==0 or (not w_in_check) and (not b_in_check)):
         # depth is reached or passed, last move was not capture, and no one is in check
         if depth <=0 and action['move'][2].count(capture_sign)==0 and not w_in_check and not b_in_check:
-            r = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
-            rez = round(r[0]-r[1],3)
-            if selfcol!='w':
-                rez = -rez
+            rez = AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
+            #rez = round(r[0]-r[1],3)
+            #if selfcol!='w':
+            #    rez = -rez
             self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',rez)
             return [rez,0] # [evaluation, num_of_avail_moves_on_next_level]
 
@@ -259,10 +217,10 @@ class AI():
         #next if is to cover for reduction of expasions to consequtive take squares, might get misinterpreted as mate
         # this will not be needed if we use true check for mate instead of rely on the inability to produce valid moves
         if depth<=0 and len(moverez)==0 and original_length>0:
-            r= self.AIeval(new_state.board)
-            rez = round(r[0]-r[1],3)
-            if selfcol!='w':
-                rez = -rez
+            rez= AIeval(new_state.board)
+            #rez = round(r[0]-r[1],3)
+            #if selfcol!='w':
+            #    rez = -rez
             #print(depthindent,'turn col:',tcol,'depth:',depth,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1],'state val',rez,file=self.log)
             moverez = [[rez,0]] # [evaluation, num_of_avail_moves_on_next_level]
         # ----- end of reduction <> mate disambiguation

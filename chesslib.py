@@ -102,236 +102,16 @@ class game():
             else:
                 mv = inp[1:]
         return mv #returns move or command
-    """
-    def AIeval(self,board_state):
-        hashstate = ''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
-        if hashstate in evaluated.keys():
-            return evaluated[hashstate]
-        
-        wval=bval= 0.0
-        for sq in board_state:
-            psq = board_state[sq]
-            if psq[0]=='w':
-                wval+=pvalues[psq[1]]
-                wval+=sqvalues[sq]
-            else:
-                bval+=pvalues[psq[1]]
-                bval+=sqvalues[sq]
-
-        if len(evaluated)<max_eval_memory_size: evaluated[hashstate]=(wval,bval)
-        return (wval,bval)
-
-    def AIrecursion(self,boardstate,selfcol,tcol,depth,original_depth,alpha,beta,action):
-        depthindent=' '*(5-depth)
-        #exec_move takes piece object, which to move, and expansion in triplet 'move type', 'destination square', 'notation'
-        # we have no use of the piece object, since the new board object creates new piece objects
-        # we still need easy way to operate on the piece we want, so we'll use sq2exp = tuple of square of the piece, expansion
-        new_state = board(boardstate)
-        if action['origin']!='':
-            new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
-        if tcol=='w':
-            pieces_set=new_state.whites[:]
-            opposite = 'b'
-        else:
-            pieces_set=new_state.blacks[:]
-            opposite = 'w'
-
-        turn_in_check = False
-        # check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
-        if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0:
-            print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
-        if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0:
-            print(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
-        w_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ][0],'b',new_state.board)
-        b_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ][0],'w',new_state.board)
-        if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
-            turn_in_check = True
-
-        ####################################################################################################################
-        #                                             TERMINATION CONDITION(S)                                             #
-        ####################################################################################################################
-        # ignore cut at depth==0 if last turn results in check -- dig deeper
-        #if depth <=0 and (sq2exp[1][2].count(capture_sign)==0 or (not w_in_check) and (not b_in_check)):
-        # depth is reached or passed, last move was not capture, and no one is in check
-        if depth <=0 and action['move'][2].count(capture_sign)==0 and not w_in_check and not b_in_check:
-            r = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
-            rez = round(r[0]-r[1],3)
-            if selfcol!='w':
-                rez = -rez
-            self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',rez)
-            return [rez,0] # [evaluation, num_of_avail_moves_on_next_level]
-
-        self.logit(depthindent,'rec:',len(evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'w+',w_in_check,'b+',b_in_check,'|action:',action)
-        moverez = []
-        pruning = False
-        original_length = 0
-        ####################################################################################################################
-        #                                                    PIECE CYCLE                                                   #
-        ####################################################################################################################
-        while not pruning and len(pieces_set)>0 :
-            p=pieces_set.pop(0)
-            expansions=new_state.valids(p)
-            original_length += len(expansions)
-            ###----------------------------------------------\
-            ### BELOW ARE REDUCTIONS on sub-depth expansions
-            if depth <=0:
-                # if deepened due to capturing -> allow only further captures on the same square
-                if action['move'][2].count(capture_sign)!=0:
-                    expansions = [ z for z in expansions if z[0] in ['t','+','e'] and z[1]==action['move'][1] ] # i.e. check deeper only captures that take at the same sq as the last vapture
-                else: # if deepened due to being check
-                    reduced_expansions = []
-                    for exp in expansions:
-                        vboard = new_state.virt_move(p,exp)
-                        if tcol =='w':
-                            still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='wk' ][0],'b',vboard)
-                        else:
-                            still_in_check = new_state.sq_in_check([ z for z in vboard.keys() if vboard[z]=='bk' ][0],'w',vboard)
-                        if not still_in_check:
-                            reduced_expansions.append(exp) # collects moves that escape the current check
-
-                    #if turn_in_check and len(reduced_expansions)>0:
-                    expansions = reduced_expansions
-
-            ####################################################################################################################
-            #                                                   EXPANSION CYCLE                                                #
-            ####################################################################################################################
-            while not pruning and len(expansions)>0:
-                e = expansions.pop(0)
-                #print('-- p',p,'e',e)
-                #print 'sq2exp: ',sq2exp #sq2exp:  ['c7', ('m', 'c5', 'c5'), 'h4', 'h5']
-                #if len(sq2exp)>2:
-                #    remnant = sq2exp[2:]
-                #else:
-                #    remnant = []
-                new_action={}
-                new_action['origin']=p.sq
-                new_action['move']=e
-                new_action['path']=action['path']+[action['move'][2]]
-                #was
-                #remnant.insert(0,sq2exp[1][2])# the move destination square 
-                #remnant.insert(0,e)           # the triplet defining the curent expansion
-                #remnant.insert(0,p.sq)        # originating square for the move 'e'
-                #print 'remnant: ',remnant # remnant:  ['f1', ('m', 'c4', 'Bc4'), 'c5', 'h4', 'h5']
-                try:
-                    r = self.AIrecursion(new_state.board,selfcol,opposite,depth-1,original_depth,alpha,beta,new_action)
-                except MoveException as err:
-                    print('********** Exception args:',str(err.args))
-                    print(new_state.show())
-                    print('new_state.piece_by_sq(action[origin])',new_state.piece_by_sq(action['origin']),'action[move]',action['move'])
-                    print('action',action)
-                    print('playin col:',selfcol)
-                    print('-- p',p,'e',e)
-                    #print('zr',r)
-                    
-                r.append(e)
-                moverez.append(r)
-                ###------------\\
-                #    PRUNING
-                if tcol==selfcol: #MAX in the cycle
-                    if r[0]>beta:
-                        pruning = True
-                        #print(depthindent,'pruned r[0]>beta',r[0],'>',beta,'| skipping:',expansions,'+',pieces_set,file=self.log)
-                        self.logit(depthindent,'pruned r[0]>beta',r[0],'>',beta,'| skipping:',expansions,'+',pieces_set)
-                    if r[0]>alpha:
-                        alpha=r[0]
-                else:
-                    if r[0]<alpha:
-                        pruning = True
-                        #print(depthindent,'pruned r[0]<alpha',r[0],'<',alpha,'| skipping:',expansions,'+',pieces_set,file=self.log)
-                        self.logit(depthindent,'pruned r[0]<alpha',r[0],'<',alpha,'| skipping:',expansions,'+',pieces_set)
-                    if r[0]<beta:
-                        beta = r[0]
-
-            # --- end of expansions cycle ---------------------/
-
-        # ---     end of the pieces cycle     ----------------/
-
-        #next if is to cover for reduction of expasions to consequtive take squares, might get misinterpreted as mate
-        # this will not be needed if we use true check for mate instead of rely on the inability to produce valid moves
-        if depth<=0 and len(moverez)==0 and original_length>0:
-            r= self.AIeval(new_state.board)
-            rez = round(r[0]-r[1],3)
-            if selfcol!='w':
-                rez = -rez
-            #print(depthindent,'turn col:',tcol,'depth:',depth,'|sq2exe:',sq2exp[0],'mv2exe:',sq2exp[1],'state val',rez,file=self.log)
-            moverez = [[rez,0]] # [evaluation, num_of_avail_moves_on_next_level]
-        # ----- end of reduction <> mate disambiguation
-
-        ####################################################################################################################
-        #                                      CHOOSE BEST RESULT TO RETURN                                                #
-        ####################################################################################################################
-        #print(depthindent,'moverez to max/min:',moverez,file=self.log)
-        if tcol==selfcol:
-            if len(moverez)==0:
-                thing = [-99, '#']
-                #print(depthindent,'returning:',thing,file=self.log)
-                self.logit(depthindent,'returning:',thing)
-                if thing[0]>alpha:
-                    alpha=thing[0]
-            else:
-                if original_depth==depth:
-                    thing = sorted(moverez,key=lambda _t: _t[0])
-                    #print 'thing1',thing
-                else:
-                    thing = max(moverez,key=lambda _t: _t[0])  # find max the score
-                    somerez = [ z for z in moverez if z[0]==thing[0] ] # select all elements that have the max score
-                    thing = min(somerez, key=lambda _t: _t[1]) # @_t[1] we have the number of expansions for the next turn; i.e. minimize opponents options
-                    #print(depthindent,'return max moverez:',thing,file=self.log) 
-                self.logit(depthindent,'return max moverez:',thing)
-        else:
-            if len(moverez)==0:
-                thing = [99, '#']
-                #print(depthindent,'returning:',thing,file=self.log)
-                self.logit(depthindent,'returning:',thing)
-                if thing[0]<beta:
-                    beta=thing[0]
-            else:
-                if original_depth==depth:
-                    thing = sorted(moverez,key=lambda _t: _t[0],reverse=True)
-                    #print 'thing2',thing
-                else:
-                    thing = min(moverez,key=lambda _t: _t[0])
-                    #print(depthindent,'return min moverez:',thing,file=self.log)
-                self.logit(depthindent,'return min moverez:',thing)
-        
-            #if type(thing[0]) == list or ('m', 'h3', 'h3') in thing:
-            #    print('moverez',moverez)
-            #    print('thing',thing)
-
-        if original_depth!=depth:
-            thing.insert(1,len(moverez)) # number of all available moves
-
-        #!!!! below will break as it's incompleted !!!
-        if original_depth==depth:
-            #thing.append(0,p.sq) # the origination sq for the _initial_ move should be returned, as its used in the validator
-            #print moverez
-            pass
-        
-        return thing
-                
-    """            
 
     def AI_move(self,init_borad_state,lastmove,depth=5,verbose=0):
-        #print('/n/n',5*'-','CALL AI_move','-'*5,file=self.log)
         self.logit('/n/n',5*'-','CALL AI_move','-'*5)
-        #print('depth:',depth,file=self.log)
-        self.logit('depth:',depth)
-        rez = {}
-        if self.turn['col']=='w':
-            opposite = 'b'
-        else:
-            opposite = 'w'
-
-        lm_origin=lastmove[0][0]
-        #lm_piece = lastmove[0][1]
-        #(filtered[0],(move_type,destination,move))
-        lm_move_triplet=(lastmove[0][1],lastmove[1]) # (piece,(move_type,destination,move))
-        action = {'origin':lm_origin,'move':lastmove[1],'path':[]}
-        #print action
-        #print 'init_borad_state',init_borad_state
+        self.logit('depth:',depth,'init_borad_state',init_borad_state,'lastmove',lastmove)
+        lm_move_triplet=(lastmove[2],lastmove[3],lastmove[4])
+        action = {'origin':lastmove[1],'move':lm_move_triplet,'path':[]}
+        #print 'action',action,'init_borad_state',init_borad_state
         rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
         ######
-        ## getting all the moves is needed in torder to validate the history related moves (self.verified uses self.black['hist'])
+        ## getting all the moves is needed in order to validate the history related moves (self.verified uses self.black['hist'])
         ## TODO: pass parameter in to keep track of that validation (self.verified) ((could be func))
         #print rr #
         """[-0.29999999999999999, 19, 18, 0, ('m', 'h5', 'h5'), ('t', 'b5', 'Bxb5'), ('m', 'b5', 'b5')]
@@ -450,27 +230,16 @@ class game():
         if 'e' in [ z[0] for z in expansions]: # verify for en passan
             for e in [ z for z in expansions if z[0]=='e' ]:
                 if piece.col=='w':
-                    #print(self.black['hist'][-1][2])
-                    #print(e[1][0]+'5')
-                    #print(e[1][0]+'6')
-                    #print(self.black['hist'])
-                    #print([ z[2] for z in self.black['hist'] ])
                     if self.black['hist'][-1][2]!=e[1][0]+'5' or e[1][0]+'6' in [ z[2] for z in self.black['hist'] ]:
                         #e[1][0] = the file for the destination sq in the e.p. move
                         # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
                         reductions.append(e)
                 else:
-                    #print(self.white['hist'][-1][2])
-                    #print(e[1][0]+'4')
-                    #print(e[1][0]+'3')
-                    #print(self.white['hist'])
-                    #print([ z[2] for z in self.white['hist'] ])
                     if self.white['hist'][-1][2]!=e[1][0]+'4' or e[1][0]+'3' in [ z[2] for z in self.white['hist'] ]:
                         #e[1][0] = the file for the destination sq in the e.p. move
                         # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
                         reductions.append(e)
 
-        #print('reductions:',reductions,file=self.log)
         self.logit('reductions:',reductions)
         reduced = [ z for z in expansions if z not in reductions ]
 
@@ -481,7 +250,6 @@ class game():
             set_to_check = self.zboard.blacks
         disambiguations = []
         set_to_check = [ z for z in set_to_check if z.type == piece.type and z.sq != piece.sq and z.type in ['r','n','b','q'] ] # we can have multiple Q after promotion
-        #print('set to check for disambiguations:',set_to_check,file=self.log)
         self.logit('set to check for disambiguations:',set_to_check)
         if len(set_to_check)>0:
             for p2c in set_to_check:
@@ -502,7 +270,6 @@ class game():
                         #print('removed ambiguous',ambiguity,'and added disambiguated',reduced[-1],file=self.log)
                         self.logit('removed ambiguous',ambiguity,'and added disambiguated',reduced[-1])
 
-        # print('final list to return:',reduced,file=self.log)
         return reduced
 
     def mate(self):
@@ -519,96 +286,81 @@ class game():
             return ''
         
     def decode_move(self, move_notation, piece_set):
+        # format of the return is tuple of 5 elements: (piece, source_qs,move_type,destination_sq,notation)
+        # first element is of class piece, and the rest are str
         verbose = 1
         if verbose>0:
-            #print('/n/n',5*'-','CALL decode_move','-'*5,file=self.log)
-            #print('decoding move:',move_notation,file=self.log)
-            #print('operating piece set:',piece_set,file=self.log)
             self.logit('/n/n',5*'-','CALL decode_move','-'*5)
             self.logit('decoding move:',move_notation)
             self.logit('operating piece set:',piece_set)
-        board_state = self.zboard.board
+        board_state = self.zboard.board # {'h8': 'br', 'h2': 'wp', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bp', 'd4': 'bn', 'd5': '  ', 'd2': '  ', 'd3': 'wp', 'd1': 'wq', 'g7': 'bp', 'g6': '  ', 'g5': 'wb', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': '  ', 'c7': 'bp', 'c6': '  ', 'c5': '  ', 'c4': 'wb', 'f1': '  ', 'f2': 'wp', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': 'bn', 'f7': 'bp', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': 'wp', 'a2': '  ', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'bp', 'e4': 'wp', 'e7': 'bk', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '}
+        
         # capture turn count if included in notation
-        #p = re.compile(r'\d\.')
         move_num = re.search(r'\d\.{1,3}\s?', move_notation)
         if move_num == None:
-            if verbose >0:
-                #print('notation does not include turn count',file=self.log)
-                self.logit('notation does not include turn count')
             zmove = move_notation
+            if verbose >0: self.logit('notation does not include turn count')
         else:
-            if verbose >0:
-                #print(move_num.span(),file=self.log)
-                self.logit(move_num.span())
             zmove = move_notation[move_num.end():]
+            if verbose >0: self.logit('move number',move_num.span())
 
-        #clean punctuation
+        #clean punctuation, #clean/process end chars
         if zmove.count('?')>0:
             zmove = zmove[:zmove.find('?')]
         if zmove.count('!')>0:
             zmove = zmove[:zmove.find('!')]
-
-        #clean/process end chars
         if zmove.count('+')>0:
             zmove = zmove[:zmove.find('+')] # check & double check
         if zmove.count('#')>0:
             zmove = zmove[:zmove.find('#')] # mate
 
-        move = zmove # this is the value for the notation we track in the hist
-        
+        move = zmove.strip() # this is the format for the notation we track in the hist
         promo = '' #promoting a pawn i.e. e8Q
         for pz in ['R','N','B','Q']:
             if zmove[-1] == pz:
                 promo = pz
-        #clean the promo char, not to tip off the piece operator
-        if promo != '':
-            zmove=zmove[:-1]
+        if promo != '': 
+            zmove=zmove[:-1] #clean the promo char, not to tip off the piece dicovery
        
         #casteling
-        if zmove.count('O') == 2 or zmove.count('0') == 2:
-            #king side castle
+        if zmove.count('O') == 2 or zmove.count('0') == 2: #king side castle
             kp = [ z for z in piece_set if z.type == 'k' ][0]
             destination = 'g'+kp.sq[1] #kp.sq[1] - the rank of king
-            #print "RETURNING1:",(kp,('c',destination,move))
-            #return (kp,('c',destination,move))
-            return ((kp.sq,kp),('c',destination,move))
+            return (kp,kp.sq,'c',destination,move)
 
-        if zmove.count('O') == 3 or zmove.count('0') == 3:
-            #queen side castle
+        if zmove.count('O') == 3 or zmove.count('0') == 3: #queen side castle
             kp = [ z for z in piece_set if z.type == 'k' ][0]
-            destination = 'c'+kp.sq[1] #kp.sq[1] - the rank of king
-            #print "RETURNING2:",(kp,('c',destination,move))
-            return ((kp.sq,kp),('c',destination,move))
-
+            destination = 'c'+kp.sq[1]
+            return (kp,kp.sq,'c',destination,move)
         
         #find piece type
         piece_type = 'p'
         for pz in ['R','N','B','Q','K']:
-           if zmove.count(pz)>0:
-               piece_type = pz
-        
-        #filtered = [x for x in piece_set if x.type == piece_type.lower()]
-        filtered = [(x.sq,x) for x in piece_set if x.type == piece_type.lower()]
+            if zmove.count(pz)>0:
+                piece_type = pz
+            elif zmove.count(pz)>1:
+                raise MoveException('more than one reference to piece type '+pz+' is found in the notation'+move_notation)
 
+        #list pieces matching the found type
+        filtered = [x for x in piece_set if x.type == piece_type.lower()]
         if len(filtered)==0:
             raise MoveException('no piece of the needed type ('+piece_type.lower()+') is found in the piece set')
-        
+
+        move_type = ''
         enpassan = False
         #find whether the move is capturing
         if zmove.count(capture_sign)>0:
             capturing = True
+            move_type='t'
             destination = zmove[zmove.find(capture_sign)+1:]
             if destination not in board_state.keys():
                 raise MoveException('capture sign detected in move, but destination ('+destination+') is not on the board')
             if  board_state[destination] == '  ':
-                if verbose>0:
-                    #print('capturing on empty sq with',destination[1],' in [3,6]',file=self.log)
-                    self.logit('capturing on empty sq with',destination[1],' in [3,6]')
+                if verbose>0: self.logit('capturing on empty sq with',destination[1],' in [3,6]')
                 if piece_type == 'p' and destination[1] in ['3','6']:
-                    enpassan = True
-                    if verbose>0:
-                        #print('possibility of en passan detected',file=self.log)
-                        self.logit('possibility of en passan detected')
+                    enpassan = True #possibility yet -- will get verified through matching expansion
+                    move_type='e'
+                    if verbose>0: self.logit('possibility of en passan detected')
                 else:
                     raise MoveException(self.zboard.show(board_state)+'\ntaking empty spot '+destination+' by non pawn '+ piece_type)
         else:
@@ -618,80 +370,76 @@ class game():
             else:
                 destination = zmove
 
-        move_type = 'm'
-        if capturing:
-            move_type='t'
-            if verbose>0:
-                self.logit('enpassan',enpassan)
-            if enpassan :
-                move_type='e'
         if promo != '':
             move_type='p'
-        if capturing and promo != '':
-            move_type='+'
+            if capturing:
+                move_type='+'
+        if move_type=='':
+            move_type = 'm'
         
-        if verbose>0:
-            self.logit('move_type',move_type)
+        if verbose>0: self.logit('move_type',move_type)
         if len(filtered)==1:
-            #print "RETURNING3:",(filtered[0],(move_type,destination,move))
-            return (filtered[0],(move_type,destination,move))
+            return (filtered[0],filtered[0].sq,move_type,destination,move)
 
         #find if the move has disambiguation
         disambiguation = ''
         if capturing:
-            if zmove[zmove.find(capture_sign)-1]!=piece_type:
-                disambiguation = zmove[zmove.find(capture_sign)-1]
-                #if piece_type != 'p':
-                #   ambiguous = zmove[0]+zmove[zmove.find(capture_sign)]
-                #else:
-                #   ambiguous = zmove
+            if zmove[zmove.find(capture_sign)-1]!=piece_type: #true for pawn capture moves
+                disambiguation = zmove[:zmove.find(capture_sign)-1] # the pawn file "cxd5"
+            else:
+                disambiguation = zmove[1:zmove.find(capture_sign)-1] # the pawn file "cxd5"
+            if len(disambiguation)>2:
+                raise MoveException('\n erroneous disambiguation '+disambiguation)
         else:
-            if len(destination)>2:
+            if len(destination)==3: # Rac1 = Rook from file "A" to "C1" ; N7g5 = Knight from rank "7" to "G5" 
                 disambiguation = destination[0]
                 destination = destination[1:]
-                #ambiguous = piece_type+destination
+            elif len(destination)==4: # Nf7g5 differ from both Nh7 and Nf3 - you can have 3 pieces of same type after promotions
+                disambiguation = destination[:2]
+                if disambiguation not in board_state.keys():
+                    raise MoveException('disambiguation detected ('+disambiguation+'), but it is not on the board')
+                destination = destination[2:]
+                if destination not in board_state.keys():
+                    raise MoveException('destination detected as ('+destination+'), but it is not on the board')
+            elif len(destination)>4:
+                raise MoveException('\n erroneous destination '+destination)
+            else:
+                pass
 
         if verbose >0:
             self.logit('disambigument:',disambiguation)
             self.logit('destination:',destination)
-                
-        if disambiguation != '':
-            if disambiguation in [chr(x) for x in range(97,105)]: #disambiguation by column
-                filtered = [ x for x in filtered if disambiguation == x[1].sq[0]]
-            else: #disambiguation by rank
-                filtered = [ x for x in filtered if disambiguation == x[1].sq[1]]
 
+        #filter by disambiguation        
+        if len(disambiguation)>0:
+            if len(disambiguation)==1:
+                if disambiguation in [chr(x) for x in range(97,105)]: 
+                    filtered = [ x for x in filtered if disambiguation == x.sq[0]] #disambiguation by file
+                else: 
+                    filtered = [ x for x in filtered if disambiguation == x.sq[1]] #disambiguation by rank
+            else:
+                filtered = [ x for x in filtered if disambiguation == x.sq] #disambiguation by origination square
+                
             if len(filtered)==0:
                 raise MoveException('no piece matching the disambiguation ('+disambiguation+') is found in the piece set')
             if len(filtered)==1:
-                #print "RETURNING4:",(filtered[0],(move_type,destination,move))
-                return (filtered[0],(move_type,destination,move))
+                return (filtered[0],filtered[0].sq,move_type,destination,move)
             
         #filter by destination
-        if verbose>0:
-            self.logit('state:',board_state)
         new = []
         for x in filtered:
-            #print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',x.sq
-            exp_ = [z[1] for z in x[1].expand(board_state)]
-            if verbose:
-                self.logit(x,exp_)
+            exp_ = [z[1] for z in x.expand(board_state)]
+            if verbose: self.logit(x,exp_)
             if destination in exp_:
                 new.append(x)
-        
         filtered = new
 
         if len(filtered)>1:
             raise MoveException('move is ambiguous. Possible executors:'+str(filtered))
         if len(filtered)==0:
             raise MoveException('no piece expanding to the destination ('+destination+') is found in the piece set')
-
-
-        if verbose >0:
-            self.logit('result:',(filtered[0],(move_type,destination,move)))
-
-        #print "RETURNING5:",(filtered[0],(move_type,destination,move))
-        return (filtered[0],(move_type,destination,move))
+        if verbose >0:  self.logit('result:',(filtered[0],(move_type,destination,move)))
+        return (filtered[0],filtered[0].sq,move_type,destination,move)
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
         old_board_state = ''
@@ -713,7 +461,6 @@ class game():
                 validated_move = None
                 while validated_move == None:
                     mv = human_function()
-                    #print('>'+str(mv)+'<')
                     if mv == 'exit':
                         eksit = True
                         validated_move = 'exit'
@@ -732,73 +479,51 @@ class game():
                             verbose=0
                         validated_move = ''
                     else:
-                        #print('mv',mv)
-
-                        #enter your move: Nxd4
-                        #(('f3', wn@f3), ('t', 'd4', 'Nxd4')))
-                        #((kp.sq, kp),  ('c', destination, move)))
-                        # in [('m', 'g1', 'Ng1'), ('m', 'h4', 'Nh4'), ('m', 'd2', 'Nd2'), ('t', 'd4', 'Nxd4'), ('t', 'e5', 'Nxe5')]
-                        """
-                        try:
-                            print ' in',self.verified(mv[0][1])
-                        except AttributeError as e:
-                            print mv[0],e.args
-                            # (wn@c3, ('m', 'd5', 'Nd5'))
-                        """    
-                            
-                        if mv[1] in self.verified(mv[0][1]):
+                        verified_moves = self.verified(mv[0])
+                        if (mv[2],mv[3],mv[4]) in verified_moves:
                             validated_move = mv
                             previous_move = mv
                         else:
                             if verbose>0:
                                 print('notation was correct, but move is invalid')
-                                print('move',mv[1])
-                                print('allowed moves',self.verified(mv[0][1]))
-                            self.logit('notation was correct, but move is invalid -- move',mv[1],'allowed moves',self.verified(mv[0][1]))
+                                print('move',mv)
+                                print('allowed moves',verified_moves)
+                            self.logit('notation was correct, but move is invalid -- move',mv,'allowed moves',verified_moves)
             else:
                 start_stamp = time.clock()
-                #print previous_move
-                #print 'old_board_state',old_board_state
+                if verbose>0:
+                    print 'AI starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
                 vm = self.AI_move(old_board_state,previous_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 previous_move = vm[1]
                 #returns (bp@f7, [0.64000000000000001, 30, 19, 38, 0, ('m', 'f3', 'Qf3'), ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]))
                 run_time = time.clock() - start_stamp
-                validated_move = [['',vm[0]],vm[1]] #?? how shall we trully validate ??
+                validated_move = (vm[0],'',vm[1][0],vm[1][1],vm[1][2]) #?? how shall we trully validate ??
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
                 if verbose >0:
                     print('AI:',vm,' completed in:',run_time)
                 self.logit('AI:',vm)
                 
-
-            #if verbose>0:
-            #    print('validated_move',validated_move)
-            #print('validated_move',validated_move,file=self.log)
-
             if not eksit and len(validated_move)>0:
                 #turn_time = now - stamp
 
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 old_board_state = self.zboard.board.copy()
-                #print 'creation',old_board_state
+                
                 #execute move
-                if verbose >0:
-                    print validated_move
-
-                self.zboard.exec_move(validated_move[0][1],validated_move[1])
+                #if verbose >0: print validated_move
+                self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
 
                 #memory reuse
-                re_count = 64 - ''.join(self.zboard.board.values()).count('  ')
+                re_count = 64 - self.zboard.board.values().count('  ')
                 if pieces_count != re_count:
                     pieces_count = re_count
                     self.ai.clean_records(re_count)
-                    #to_del = [ k for k in evaluated.keys() if 64-k.count('  ')>re_count]
-                    #for d in to_del:
-                    #    del evaluated[d]
-                    #this is a good spot to load from pickle records for pieces_count-5
-                
-                self.turn['hist'].append(validated_move[1])  #  add move to hist
+
+                #add history record
+                self.turn['hist'].append(validated_move[4])  #  add move to hist
                 #self.turn['time'] -= turn_time #  remaining time = remaining time - turn time
+
                 #add move to full notation
                 if self.turn['col'] == 'w':
                     opposite_col = self.zboard.blacks
@@ -806,14 +531,16 @@ class game():
                     opposite_col = self.zboard.whites
                 kp = [ z for z in opposite_col if z.type=='k' ][0]
                 
-                #sq_in_check(self,sq,by_col,b_state='',verbose=0):
                 check = self.zboard.sq_in_check(kp.sq,self.turn['col'])
-                #print 'prior to notation',validated_move
-                add_notation = validated_move[1][2] 
+
+
+                #:run breaks on the line below because formatting returned by the AI differes from the one returned by the decode_move !!!
+                add_notation = validated_move[4]
+                
                 if check:
                     add_notation += '+'
                     
-                #switch turn & #complete the move notation (disambiguation notation should be in the AI move section)
+                #switch turn & complete the move notation (disambiguation notation should be in the AI move section)
                 if self.turn['col'] == 'w':
                     self.turn = self.black
                     self.full_notation += str(self.turn_count)+'. '+add_notation+' ' #move separator
@@ -822,13 +549,11 @@ class game():
                     self.turn = self.white
                     self.full_notation += add_notation+'\n'
 
-                #  including the 'in_check' value
+                #calculating the 'in_check' value
                 self.turn['is_in_check'] = check
                 #check if mate or stalemate
                 mate = self.mate()
-
-            
-            
+        
         # --------- end of while
         if verbose>0:
             print(self.full_notation)

@@ -379,12 +379,12 @@ class boardTest(unittest.TestCase):
         |  |  |  |  |  |  |  |  |
         |wr|  |  |  |wk|  |  |wr|
         """
-        self.assertEqual((('e1',zgame.zboard.piece_by_sq('e1')),('m','f2','Kf2')),zgame.decode_move('13. Kf2',zgame.turnset()))
-        self.assertEqual((('e1',zgame.zboard.piece_by_sq('e1')),('c','g1','O-O')),zgame.decode_move('O-O',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('e1'),'e1','m','f2','Kf2'),zgame.decode_move('13. Kf2',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('e1'),'e1','c','g1','O-O'),zgame.decode_move('O-O',zgame.turnset()))
         # O-O-O because it only decodes against the set, without validation
-        self.assertEqual((('e1',zgame.zboard.piece_by_sq('e1')),('c','c1','O-O-O')),zgame.decode_move('O-O-O',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('e1'),'e1','c','c1','O-O-O'),zgame.decode_move('O-O-O',zgame.turnset()))
         #print(zgame.show())
-        self.assertEqual((('b5',zgame.zboard.piece_by_sq('b5')),('t','d7','Bxd7')),zgame.decode_move('Bxd7+',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('b5'),'b5','t','d7','Bxd7'),zgame.decode_move('Bxd7+',zgame.turnset()))
         zgame.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': 'wp', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bp', 'd4': '  ', 'd5': '  ', 'd2': 'wp', 'd3': '  ', 'd1': 'wq', 'g7': 'bp', 'g6': '  ', 'g5': 'wp', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': 'bn', 'c8': 'bb', 'c3': 'bn', 'c2': 'wp', 'c1': 'wb', 'c7': 'bp', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wb', 'f2': 'wp', 'f3': '  ', 'f4': '  ', 'f5': 'bp', 'f6': '  ', 'f7': '  ', 'f8': 'bb', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': 'wn', 'b2': 'wp', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': 'bk', 'a7': 'bp', 'a6': '  ', 'e5': '  ', 'e4': 'wn', 'e7': 'bp', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': 'wp', 'a4': '  '})
         """
         |br|  |bb|bq|bk|bb|bn|  |
@@ -397,15 +397,15 @@ class boardTest(unittest.TestCase):
         |wr|wn|wb|wq|wk|wb|  |wr|
         """
         #print(zgame.show())
-        self.assertEqual((('h7',zgame.zboard.piece_by_sq('h7')),('p','h8','h8Q')),zgame.decode_move('h8Q',zgame.turnset()))
-        self.assertEqual((('h7',zgame.zboard.piece_by_sq('h7')),('+','g8','hxg8N')),zgame.decode_move('hxg8N',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('h7'),'h7','p','h8','h8Q'),zgame.decode_move('h8Q',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('h7'),'h7','+','g8','hxg8N'),zgame.decode_move('hxg8N',zgame.turnset()))
         #print(zgame.decode_move('Rxh7',zgame.turnset())) # cant promote to King
         self.assertRaises(chesslib.MoveException, zgame.decode_move, '999. b8',zgame.turnset())  # no pawn to reach b8
         self.assertRaises(chesslib.MoveException, zgame.decode_move, '2 fxgdfgdfgsdfg',zgame.turnset())  # ##cannot take own
         self.assertRaises(chesslib.MoveException, zgame.decode_move, 'Ra3',zgame.turnset())  # invalid
 
         #e.p.
-        self.assertEqual((('g5',(zgame.zboard.piece_by_sq('g5'))),('e','f6','gxf6')),zgame.decode_move('gxf6',zgame.turnset()))
+        self.assertEqual((zgame.zboard.piece_by_sq('g5'),'g5','e','f6','gxf6'),zgame.decode_move('gxf6',zgame.turnset()))
         
     def test_game_cycle_n_mate(self):
         zgame = chesslib.game()
