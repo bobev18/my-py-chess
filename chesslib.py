@@ -443,8 +443,8 @@ class game():
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
         old_board_state = ''
-        pieces_count = 32
-        previous_move = None
+        #pieces_count = 32
+        #previous_move = None
         if testing != []:
             testing.append('exit')
             human_function = lambda : self.decode_move(testing.pop(0),self.turnset())
@@ -482,7 +482,7 @@ class game():
                         verified_moves = self.verified(mv[0])
                         if (mv[2],mv[3],mv[4]) in verified_moves:
                             validated_move = mv
-                            previous_move = mv
+                            #previous_move = mv
                         else:
                             if verbose>0:
                                 print('notation was correct, but move is invalid')
@@ -493,11 +493,14 @@ class game():
                 start_stamp = time.clock()
                 if verbose>0:
                     print 'AI starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
-                vm = self.AI_move(old_board_state,previous_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
-                previous_move = vm[1]
+                vm = self.AI_move(old_board_state,validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
+                # note: validated_move was previous_move, but since it has the same value...
+                
+                #previous_move = vm[1]
                 #returns (bp@f7, [0.64000000000000001, 30, 19, 38, 0, ('m', 'f3', 'Qf3'), ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]))
                 run_time = time.clock() - start_stamp
                 validated_move = (vm[0],'',vm[1][0],vm[1][1],vm[1][2]) #?? how shall we trully validate ??
+                #previous_move = validated_move
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
                 if verbose >0:
@@ -515,10 +518,8 @@ class game():
                 self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
 
                 #memory reuse
-                re_count = 64 - self.zboard.board.values().count('  ')
-                if pieces_count != re_count:
-                    pieces_count = re_count
-                    self.ai.clean_records(re_count)
+                if validated_move[2] == 't':
+                    self.ai.clean_records(64 - self.zboard.board.values().count('  '))
 
                 #add history record
                 self.turn['hist'].append(validated_move[4])  #  add move to hist

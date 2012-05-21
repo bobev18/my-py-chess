@@ -16,6 +16,17 @@ So far:
    added disambiguation in the expand function
    fixed: error on certain returns of the verify method were returning move representation (a,(c,d,e)) instead of the new ((a,b),(c,d,e))
 
+In this branch:
+ - changed the return format to tuple of five elements, but some other methods still take old format as input
+ - spit time at start of the AI move
+ - changes to the AIEval caused issues
+1. e4 Nf6
+2. Nc3 e6
+3. Bb5 c6
+4. Ba4 Qb6
+5. Bb3 Qxf2+
+ - 
+
 TODOs:
  - Main
 *  + change the structure returned by the validation from ((a,b),(c,d,e)) to single tuple or dict
