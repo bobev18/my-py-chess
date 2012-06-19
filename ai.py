@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+## https://www.ai-class.com/course/video/quizquestion/194
+# Unit 13.6
+#
+
 import re#, sys
 #global max_eval_memory_size
 #max_eval_memory_size = 150000
@@ -34,8 +38,6 @@ class AI():
 
         
         self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
-        with open(logfile,'w') as f:
-            self.logfile = logfile #sys.stdout
 
     def logit(self,*args):
         data=' '.join([str(x) for x in args])
@@ -70,14 +72,132 @@ class AI():
         for sq in board_state.keys():
             if board_state[sq][0]=='w':
                 val+=handy(sq)
-            elif board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
+            if board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
                 val-=handy(sq)
-            else: 
-                pass
-
+                
+        #print hashstate,'     rezval',val
+        val = round(val,3)
+            
         if len(self.evaluated) < self.max_eval_memory_size:
             self.evaluated[hashstate]=val
         return val
+
+    def maxValue(self,boardstate,tcol,depth,original_depth,alpha,beta,expansions, path):
+        v = -999
+        best_action = {}
+        for p in expansions.keys():
+            for e in expansions[p]:
+                new_action={}
+                new_action['origin']=p[-2:]
+                new_action['move']=e
+                #print 'max new_action path',e,e[2]
+                new_action['path']=path+[e[2]]
+                r=self.Value(boardstate,tcol,depth-1,original_depth,alpha,beta,new_action)
+                if r>v:
+                    v = r
+                    best_action=new_action
+                if v >= beta:
+                    return [v, new_action]
+                alpha = max(alpha,v)
+
+        return [v,best_action]
+
+    def minValue(self,boardstate,tcol,depth,original_depth,alpha,beta,expansions, path):
+        v = 999
+        best_action = {}
+        for p in expansions.keys():
+            for e in expansions[p]:
+                new_action={}
+                
+                new_action['origin']=str(p)[-2:]
+                new_action['move']=e
+                #print 'min new_action path',e,e[2]
+                new_action['path']=path+[e[2]]
+                
+                r = self.Value(boardstate,tcol,depth-1,original_depth,alpha,beta,new_action)
+                if r<v:
+                    v=r
+                    best_action = new_action
+                if v <= alpha:
+                    return v
+                beta = min(beta,v)
+
+        return [v,best_action]
+
+    def Value(self,boardstate,tcol,depth,original_depth,alpha,beta,action):
+        depthindent=' '*(5-depth)
+        # if we have reached cutoff depth and the last move has no capture or check:
+        if depth <=0 and action['move'][2].count(self.capture_sign)==0 and not w_in_check and not b_in_check:
+            rez = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',rez)
+            return [rez,0] # [evaluation, num_of_avail_moves_on_next_level]
+
+        #matecheck uses the extend anyways... so we might as well use it
+        # first we need to push the move
+        new_state = board(boardstate)
+        new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
+        if tcol=='w':
+            pieces_set=new_state.whites[:]
+            opposite = 'b'
+        else:
+            pieces_set=new_state.blacks[:]
+            opposite = 'w'
+
+        
+        # then, check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
+        turn_in_check = False
+        if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0:
+            print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
+        if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0:
+            print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
+        w_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ][0],'b',new_state.board)
+        b_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ][0],'w',new_state.board)
+        if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
+            turn_in_check = True
+
+        # and finaly get the expand list
+        expansions = {}
+        for p in pieces_set:
+            expansions[p]=new_state.valids(p)
+
+        # teminal state
+        if len(expansions)==0:
+            # check if mate or stalemate
+            if turn_in_check: 
+                rez = 99
+            else:
+                rez = 60 # later we need to adjust this depending on whether we want remi
+            #check if mate is for the white
+            if tcol=='w':
+                rez=-rez
+                
+            return [rez, '#']
+
+        # maximizing state
+        if tcol=='w':
+            rez = self.maxValue(boardstate,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
+        if tcol=='b':
+            print boardstate
+            print tcol
+            print depth
+            print original_depth
+            print alpha
+            print beta
+            print expansions
+            print action['path']
+            rez = self.minValue(boardstate,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
+
+        print 'z rez:', rez
+        return rez+[len(expansions)]
+        #### - Note - ###
+        # The max/min doesn't depend on the self_color, because if AI is playing White, it still needs to calculate
+        # the best move for the human opponent (Black), and that will still be min() since the low value of the state
+        # means it's better possition for the Black!!!
+        #### -------- ###
+        
+            
+            
+        
     
     def AIrecursion(self,boardstate,selfcol,tcol,depth,original_depth,alpha,beta,action):
         depthindent=' '*(5-depth)
@@ -114,8 +234,8 @@ class AI():
         if depth <=0 and action['move'][2].count(self.capture_sign)==0 and not w_in_check and not b_in_check:
             rez = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
             #rez = round(r[0]-r[1],3)
-            if selfcol!='w':
-                rez = -rez
+            #if selfcol!='w':
+            #    rez = -rez
             self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',rez)
             return [rez,0] # [evaluation, num_of_avail_moves_on_next_level]
 
@@ -262,7 +382,7 @@ class AI():
         #!!!! below will break as it's incompleted !!!
         if original_depth==depth:
             #thing.append(0,p.sq) # the origination sq for the _initial_ move should be returned, as its used in the validator
-            #print moverez
+            #print 'to be returned',thing
             pass
-        
+
         return thing

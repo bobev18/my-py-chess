@@ -109,7 +109,10 @@ class game():
         lm_move_triplet=(lastmove[2],lastmove[3],lastmove[4])
         action = {'origin':lastmove[1],'move':lm_move_triplet,'path':[]}
         #print 'action',action,'init_borad_state',init_borad_state
-        rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
+        #rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
+        rrr = self.ai.Value(init_borad_state,self.turn['col'],depth,depth,-999,999,action)
+        print '\n'.join([str(x) for x in rrr])
+        print '-'*10
         ######
         ## getting all the moves is needed in order to validate the history related moves (self.verified uses self.black['hist'])
         ## TODO: pass parameter in to keep track of that validation (self.verified) ((could be func))
@@ -135,20 +138,22 @@ class game():
         [0.68000000000000005, 29, 29, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e5', 'e5')]
         [0.68000000000000005, 30, 30, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e6', 'e6')]
         """
-        zmax=max(rrr,key=lambda z: z[0])
-        tmp = [x for x in rrr if x[0]==zmax[0]]
+        zmax=min(rrr,key=lambda z: z[0])
+        tmp = [x for x in rrr if x[0]==zmax[0]] # if there are many results with the same value ...
         if len(tmp)>1:
-            rrr = sorted(tmp,key=lambda _t: _t[1],reverse=True)
+            rrr = sorted(tmp,key=lambda _t: _t[1],reverse=True) # ... choose the one that leaves the least options for the opponent
+        print '\n'.join([str(x) for x in rrr])
+        print '-'*10
         while rrr:
             rr = rrr.pop()
             for p in self.turnset():
                 # the initial moves are the end of the queue
                 movepath = [x for x in rr[1:] if isinstance(x,tuple)]
-                #print movepath
                 zmove= movepath[-1]
-                #print 'zmove',zmove
                 #print self.verified(p)
                 if zmove in self.verified(p):
+                    print movepath
+                    print 'piece',p,'    zmove',zmove
                     return [p,zmove]
 
         return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
