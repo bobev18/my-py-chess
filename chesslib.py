@@ -111,7 +111,7 @@ class game():
         #print 'action',action,'init_borad_state',init_borad_state
         #rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
         rrr = self.ai.Value(init_borad_state,self.turn['col'],depth,depth,-999,999,action)
-        print '\n'.join([str(x) for x in rrr])
+        print '\n'.join([str(x)+':'+str(rrr[x]) for x in rrr])
         print '-'*10
         ######
         ## getting all the moves is needed in order to validate the history related moves (self.verified uses self.black['hist'])
@@ -138,6 +138,7 @@ class game():
         [0.68000000000000005, 29, 29, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e5', 'e5')]
         [0.68000000000000005, 30, 30, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e6', 'e6')]
         """
+        """
         zmax=min(rrr,key=lambda z: z[0])
         tmp = [x for x in rrr if x[0]==zmax[0]] # if there are many results with the same value ...
         if len(tmp)>1:
@@ -155,7 +156,8 @@ class game():
                     print movepath
                     print 'piece',p,'    zmove',zmove
                     return [p,zmove]
-
+        """
+        return rrr['move']
         return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
         """
         #set separate log file for each AI move, beacuse otherwise the log gets 0.5GB big
@@ -499,15 +501,20 @@ class game():
                 if verbose>0:
                     print 'AI starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
                 vm = self.AI_move(old_board_state,validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
+                #vm = self.AI_move(self.zboard.board.copy(),validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 # note: validated_move was previous_move, but since it has the same value...
                 
                 #previous_move = vm[1]
                 #returns (bp@f7, [0.64000000000000001, 30, 19, 38, 0, ('m', 'f3', 'Qf3'), ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]))
                 run_time = time.clock() - start_stamp
-                validated_move = (vm[0],'',vm[1][0],vm[1][1],vm[1][2]) #?? how shall we trully validate ??
-                #previous_move = validated_move
+                #validated_move = (vm[0],'',vm[1][0],vm[1][1],vm[1][2]) #?? how shall we trully validate ??
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
+
+                validated_move = (self.zboard.piece_by_sq(vm['origin']),'',vm['move'][0],vm['move'][1],vm['move'][2])
+                ## ~~ self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
+                # def exec_move(self,piece,exp,verbose=0):#,virtual=False):
+                
                 if verbose >0:
                     print('AI:',vm,' completed in:',run_time)
                 self.logit('AI:',vm)
@@ -519,7 +526,7 @@ class game():
                 old_board_state = self.zboard.board.copy()
                 
                 #execute move
-                #if verbose >0: print validated_move
+                if verbose >0: print validated_move
                 self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
 
                 #memory reuse

@@ -66,3 +66,22 @@ TODOs:
  - Conceptual
    = extract all log functionality to class/decorators
    = experiment with dynamic switch of classes - save game state, init new class objects, load state
+
+
+
+---------------------------------------------------------
+>>>>>>>>>> BRANCH "validation_ret_restruct": <<<<<<<<<<<<
+---------------------------------------------------------
+ * The validation return is restructured
+ * Broke the AI, and reverting seems way back, so I re-wrote it
+ * New AI is not any better in performance, but is a bit simpler in structure
+ * Got "c:\Python26\python.exe -m cProfile c:\gits\my-py-chess\unitt.py" to find the time hole:
+   - 179.407sec  ai.py:53(AIeval)
+   - 191.796sec  board.py:277(validate_move)
+       - 184.368sec  board.py:314(sq_in_check)
+   - 67.379sec  {method 'keys' of 'dict' objects} due to 7 614 286 calls
+ 
+ >>ToDo
+ - board.py line 350: change the check -- apparantly too expensive as it currently is
+
+

@@ -138,6 +138,7 @@ class board():
 
         if self.piece_by_sq(tosq) != None:
             msg = 'Are you blind - there is another piece at that spot: '+repr(self.piece_by_sq(tosq))
+            print self.show()
             raise MoveException(msg)
 
         if piece == None:
@@ -166,6 +167,7 @@ class board():
 
         if piece == None:
             msg = 'Trying to move the air at '+piece_or_sq
+            print self.show()
             raise MoveException(msg)
 
         #the following code covers for the boardify:
@@ -318,7 +320,8 @@ class board():
             board_state = self.board
         else:
             board_state = b_state
-        
+
+        #knight
         x,y = sq2pos(sq)
         disp = [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]
         dispsq = [ p2s(z) for z in disp if p2s(z)!='n/a']
@@ -326,10 +329,12 @@ class board():
             if board_state[dsq] == by_col+'n': return True
 
         #pawns
-        disp = [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]
-        dispsq = [ p2s(z) for z in disp if p2s(z)!='n/a']
-        if by_col == 'w' and ((p2s((x+1,y-1)) != 'n/a' and board_state[p2s((x+1,y-1))] == 'wp') or (p2s((x-1,y-1)) !='n/a' and board_state[p2s((x-1,y-1))] == 'wp')): return True
-        if by_col == 'b' and ((p2s((x+1,y+1)) != 'n/a' and board_state[p2s((x+1,y+1))] == 'bp') or (p2s((x-1,y+1)) !='n/a' and board_state[p2s((x-1,y+1))] == 'bp')): return True
+        #disp = [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]
+        #dispsq = [ p2s(z) for z in disp if p2s(z)!='n/a']
+        if by_col == 'w' and ((p2s((x+1,y-1)) != 'n/a' and board_state[p2s((x+1,y-1))] == 'wp') or (p2s((x-1,y-1)) !='n/a' and
+                                                                                                    board_state[p2s((x-1,y-1))] == 'wp')): return True
+        if by_col == 'b' and ((p2s((x+1,y+1)) != 'n/a' and board_state[p2s((x+1,y+1))] == 'bp') or (p2s((x-1,y+1)) !='n/a' and
+                                                                                                    board_state[p2s((x-1,y+1))] == 'bp')): return True
         
         """
         if board_state[pos2sq(x-1,y+2)] == by_col+'n': return True
