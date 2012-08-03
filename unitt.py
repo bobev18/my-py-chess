@@ -418,7 +418,7 @@ class boardTest(unittest.TestCase):
         zgame.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': '  ', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': '  ', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': '  ', 'c8': '  ', 'c3': 'bn', 'c2': '  ', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': '  ', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         self.assertEqual('1/2-1/2',zgame.cycle(['Bxd7','Kd8','Rh7','Ra2','Rxa2','Qa5','Rxa5','Ne2','Kxe2'],0,0))
         #print '\n',zgame.full_notation
-
+    
     def test_game_cycle_ai(self):
         zgame = chesslib.game(bplayer='ai',logfile='d:\\temp\\aigametest.txt') # using log different from the defailt, so that it doesn't get overwrittent by subsequent test
         """

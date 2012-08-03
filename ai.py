@@ -33,7 +33,7 @@ from board import MoveException
 class AI():
     def __init__(self,logfile='d:\\temp\\delme.txt'):#self,wplayer='human',bplayer='human',clock=60*60,logfile='d:\\temp\\chesslog.txt'):
         self.evaluated = {}
-        self.max_eval_memory_size = 150000
+        self.max_eval_memory_size = 1000000
         self.capture_sign = 'x'
 
         
@@ -49,13 +49,33 @@ class AI():
         for d in to_del:
             del self.evaluated[d]
         #this is a good spot to load from pickle records for pieces_count-5
+
+    def AICalc(self,board_state):
+        # moved the calculation to another func, to determine the effect of the cache
+        val= 0.0
+        for sq in board_state:
+            if board_state[sq][0]=='w':
+                val+=pvalues[board_state[sq][1]]#+sqvalues[sq]
+            if board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
+                val-=pvalues[board_state[sq][1]]#+sqvalues[sq]
+                
+        #print hashstate,'     rezval',val
+        val = round(val,3)
+        return val
     
     def AIeval(self,board_state):
         hashstate = hashit(board_state) #''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
-        if hashstate in self.evaluated.keys():
+        #if hashstate in self.evaluated.keys():
+        try:
             return self.evaluated[hashstate]
-        
-        handy = lambda sq: pvalues[board_state[sq][1]]+sqvalues[sq]
+        except KeyError as e:
+            val = self.AICalc(board_state)
+            if len(self.evaluated) < self.max_eval_memory_size:
+                self.evaluated[hashstate]=val
+            return val
+            
+        '''        
+        #handy = lambda sq: pvalues[board_state[sq][1]]+sqvalues[sq]
         """
         wval= 0.0
         bval= 0.0
@@ -69,11 +89,11 @@ class AI():
         """
 
         val= 0.0
-        for sq in board_state.keys():
+        for sq in board_state:
             if board_state[sq][0]=='w':
-                val+=handy(sq)
+                val+=pvalues[board_state[sq][1]]#+sqvalues[sq]
             if board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
-                val-=handy(sq)
+                val-=pvalues[board_state[sq][1]]#+sqvalues[sq]
                 
         #print hashstate,'     rezval',val
         val = round(val,3)
@@ -81,6 +101,7 @@ class AI():
         if len(self.evaluated) < self.max_eval_memory_size:
             self.evaluated[hashstate]=val
         return val
+        '''
 
     """
     def maxValue(self,boardstate,tcol,depth,original_depth,alpha,beta,expansions, path):

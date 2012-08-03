@@ -43,7 +43,14 @@ emptyboardinit = {'a8':'  ', 'b8':'  ', 'c8':'  ', 'd8':'  ', 'e8':'  ', 'f8':' 
                  'a2':'  ', 'b2':'  ', 'c2':'  ', 'd2':'  ', 'e2':'  ', 'f2':'  ', 'g2':'  ', 'h2':'  ',
                  'a1':'  ', 'b1':'  ', 'c1':'  ', 'd1':'  ', 'e1':'  ', 'f1':'  ', 'g1':'  ', 'h1':'  ',}
 
-
+p2s2d = {(1,1):"a1",(1,2):"a2",(1,3):"a3",(1,4):"a4",(1,5):"a5",(1,6):"a6",(1,7):"a7",(1,8):"a8",
+        (2,1):"b1",(2,2):"b2",(2,3):"b3",(2,4):"b4",(2,5):"b5",(2,6):"b6",(2,7):"b7",(2,8):"b8",
+        (3,1):"c1",(3,2):"c2",(3,3):"c3",(3,4):"c4",(3,5):"c5",(3,6):"c6",(3,7):"c7",(3,8):"c8",
+        (4,1):"d1",(4,2):"d2",(4,3):"d3",(4,4):"d4",(4,5):"d5",(4,6):"d6",(4,7):"d7",(4,8):"d8",
+        (5,1):"e1",(5,2):"e2",(5,3):"e3",(5,4):"e4",(5,5):"e5",(5,6):"e6",(5,7):"e7",(5,8):"e8",
+        (6,1):"f1",(6,2):"f2",(6,3):"f3",(6,4):"f4",(6,5):"f5",(6,6):"f6",(6,7):"f7",(6,8):"f8",
+        (7,1):"g1",(7,2):"g2",(7,3):"g3",(7,4):"g4",(7,5):"g5",(7,6):"g6",(7,7):"g7",(7,8):"g8",
+        (8,1):"h1",(8,2):"h2",(8,3):"h3",(8,4):"h4",(8,5):"h5",(8,6):"h6",(8,7):"h7",(8,8):"h8",}
 
 def sq2pos(sq):
     x = ord(sq[0])-96
@@ -58,6 +65,12 @@ def p2s(xy):
     x,y=xy
     if x<1 or x>8 or y<1 or y>8: return 'n/a'
     return chr(96+x)+str(y)
+
+def p2s2(xy):
+    try:
+        return p2s2d[xy]
+    except KeyError:
+        return 'n/a'
 
 class MoveException(Exception):
     def __init__(self, *args):
@@ -321,20 +334,28 @@ class board():
         else:
             board_state = b_state
 
-        #knight
+        
         x,y = sq2pos(sq)
-        disp = [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]
-        dispsq = [ p2s(z) for z in disp if p2s(z)!='n/a']
-        for dsq in dispsq:
-            if board_state[dsq] == by_col+'n': return True
+        
+        def knight_check():
+            for q in [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]:
+                dsq = p2s2(z)
+                if dsq != 'n/a' and board_state[dsq] == by_col+'n': return True
+
+            return False
+        
 
         #pawns
         #disp = [(x-1,y+2),(x-2,y+1),(x-2,y-1),(x-1,y-2),(x+1,y+2),(x+2,y+1),(x+2,y-1),(x+1,y-2),]
         #dispsq = [ p2s(z) for z in disp if p2s(z)!='n/a']
-        if by_col == 'w' and ((p2s((x+1,y-1)) != 'n/a' and board_state[p2s((x+1,y-1))] == 'wp') or (p2s((x-1,y-1)) !='n/a' and
-                                                                                                    board_state[p2s((x-1,y-1))] == 'wp')): return True
-        if by_col == 'b' and ((p2s((x+1,y+1)) != 'n/a' and board_state[p2s((x+1,y+1))] == 'bp') or (p2s((x-1,y+1)) !='n/a' and
-                                                                                                    board_state[p2s((x-1,y+1))] == 'bp')): return True
+
+        def pawns_check():
+            if by_col == 'w' and ((p2s2((x+1,y-1)) != 'n/a' and board_state[p2s2((x+1,y-1))] == 'wp') or (p2s2((x-1,y-1)) !='n/a' and
+                                                                                                    board_state[p2s2((x-1,y-1))] == 'wp')): return True
+            if by_col == 'b' and ((p2s2((x+1,y+1)) != 'n/a' and board_state[p2s2((x+1,y+1))] == 'bp') or (p2s2((x-1,y+1)) !='n/a' and
+                                                                                                    board_state[p2s2((x-1,y+1))] == 'bp')): return True
+            return False
+        
         
         """
         if board_state[pos2sq(x-1,y+2)] == by_col+'n': return True
@@ -347,6 +368,7 @@ class board():
         if board_state[pos2sq(x+1,y-2)] == by_col+'n': return True
         """
 
+        """
         #NE=SE=SW=NW=N=E=S=W=False # flags for each direction
         directions = {'N':False,'NE':False,'E':False,'SE':False,'S':False,'SW':False,'W':False,'NW':False}
         for i in range(1,8):
@@ -368,10 +390,58 @@ class board():
                             if board_state[sqdisp] != '  ': # not an empty field, which leaves the option of it having a piece of own color
                                 if verbose>0 : print('*'*3)
                                 directions[disp[d][0]]=True # the direction is blocked
+        """
 
-       
+        """
+        #NE=SE=SW=NW=N=E=S=W=False # flags for each direction
+        directions = {'N':[False,(0,1),['q','r']],'NE':[False,(1,1),['q','b']],'E':[False,(1,0),['q','r']],'SE':[False,(1,-1),['q','b']],
+                      'S':[False,(0,-1),['q','r']],'SW':[False,(-1,-1),['q','b']],'W':[False,(-1,0),['q','r']],'NW':[False,(-1,1),['q','b']]}
+        i = 1
+        while i<8 and not all([directions[z][0] for z in directions]):
+            for d in directions:
+                if not directions[d][0]:
+                    sqdisp = p2s((directions[d][1][0]*i+x,directions[d][1][1]*i+y))
+                    #print('i',i,'directions key',d,'directions[key]',directions[d],'disp sq',sqdisp)
+                    if sqdisp != 'n/a':
+                        #print('board[sq] >',board_state[sqdisp],'<')#,sep='')
+                        if board_state[sqdisp][0] == by_col: # at the displacement square there is an enemy piece
+                            if i == 1 and board_state[sqdisp][1] =='k': return True  # king at distance 1
+                            if board_state[sqdisp][1] in directions[d][2]: return True # relevant displacement operator at distance i
+                            directions[d][0]=True # the direction is blocked if an enemy piece doesnt operate in that direction IRRELEVANT displacement operator at distance i
+                        else:
+                            if board_state[sqdisp] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                                #print('*'*3)
+                                directions[d][0]=True # the direction is blocked
+                    else:
+                        directions[d][0]=True # sqdisp == 'n/a' => edge of the board => dont expand further in that direction
+                
+            i+=1
+        """
 
-        return False
+        def rest_check():
+            directions = {(0,1):['q','r'],(1,1):['q','b'],(1,0):['q','r'],(1,-1):['q','b'],(0,-1):['q','r'],(-1,-1):['q','b'],(-1,0):['q','r'],(-1,1):['q','b']}
+            i = 1
+            while i<8 and len(directions)>0:
+                for d in directions.keys():
+                    sqdisp = p2s2((d[0]*i+x,d[1]*i+y))
+                    if sqdisp != 'n/a':
+                        #print('board[sq] >',board_state[sqdisp],'<')#,sep='')
+                        if board_state[sqdisp][0] == by_col: # at the displacement square there is an enemy piece
+                            if i == 1 and board_state[sqdisp][1] =='k': return True  # king at distance 1
+                            if board_state[sqdisp][1] in directions[d]: return True # relevant displacement operator at distance i
+                            del directions[d] # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
+                        else:
+                            if board_state[sqdisp] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                                #print('*'*3)
+                                del directions[d] # the direction is blocked
+                    else:
+                        del directions[d] # sqdisp == 'n/a' => edge of the board => dont expand further in that direction
+                
+                i+=1
+
+            return False
+
+        return rest_check() or pawns_check() or knight_check()
 
     def valids(self,piece, debug=0):
         # return list of hist independant valid moves for given piece
