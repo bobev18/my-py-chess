@@ -218,6 +218,11 @@ class boardTest(unittest.TestCase):
         self.assertFalse(self.zboard.sq_in_check('f2','b'))
         self.assertFalse(self.zboard.sq_in_check('d2','b'))
 
+    def test_incheck_checks2(self):
+        self.zboard.piecefy({'h8': 'br', 'h2': 'wp', 'h3': '  ', 'h1': 'wr', 'h6': 'bn', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': 'wp', 'd3': '  ', 'd1': 'wq', 'g7': 'bp', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': 'wn', 'g8': '  ', 'c8': 'bb', 'c3': '  ', 'c2': 'wp', 'c1': 'wb', 'c7': 'bp', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': 'wp', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'bp', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'bp', 'b1': 'wn', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': 'wr', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': 'bk', 'a7': 'bp', 'a6': '  ', 'e5': '  ', 'e4': 'wp', 'e7': 'bp', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
+        self.assertTrue(self.zboard.sq_in_check2('e8','w'))
+        
+
     """
     def test_validate_against_checks(self):
         #note:since we dont have the the game class, we will use the _piecefy_ to reset the board back after executing every expansion for evaluation

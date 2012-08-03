@@ -213,8 +213,19 @@ class AI():
             print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
         if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0:
             print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
-        w_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ][0],'b',new_state.board)
-        b_in_check = new_state.sq_in_check([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ][0],'w',new_state.board)
+    
+        try:
+            w_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='wk' ][0],'b',new_state.board)
+            b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
+        except:
+            print new_state.board
+            print "action['origin']",action['origin']
+            print "action['move']",action['move']
+            print "action['path']",action['path']
+            w_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='wk' ][0],'b',new_state.board)
+            b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
+        
+        
         if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
             turn_in_check = True
 
