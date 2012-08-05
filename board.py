@@ -406,13 +406,13 @@ class board():
 
        
 
-        def knight_check():
+        def knight_check2():
             for dsq in bmap[sq]['knight']:
                 if board_state[dsq] == by_col+'n': return True
 
             return False
 
-        def pawns_check():
+        def pawns_check2():
             if by_col == 'w':
                 for dsq in bmap[sq]['wpawn']:
                     if dsq == 'wp': return True
@@ -422,13 +422,13 @@ class board():
                     
             return False
 
-        def king_check():
+        def king_check2():
             for dsq in bmap[sq]['king']:
                 if board_state[dsq] == by_col+'k': return True
 
             return False
 
-        def rest_check():
+        def rest_check2():
             
             directions = {'N':False,'NE':False,'E':False,'SE':False,'S':False,'SW':False,'W':False,'NW':False}
             zmap={}
@@ -455,7 +455,77 @@ class board():
 
             return False
 
-        return rest_check() or pawns_check() or knight_check() or king_check()
+        def rest_check3():
+            dir1 = ['N','E','S','W']
+            for d in dir1:
+                zmap= bmap[sq][d][:]
+                while len(zmap)>0:
+                    if verbose>0:
+                        print d,len(d),zmap
+                    
+                    dsq = zmap.pop(0)
+                    if verbose>0:
+                        print 'dsq',dsq,'board_state[dsq]','>'+board_state[dsq]+'<'
+                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
+                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'r':
+                            return True # relevant displacement operator at distance i
+                        zmap=[] # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
+                    else:
+                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                            zmap=[] # the direction is blocked
+
+            dir2 = ['NE','SE','SW','NW']
+            for d in dir2:
+                zmap= bmap[sq][d][:]
+                while len(zmap)>0:
+                    if verbose>0:
+                        print d,len(d),zmap
+                    
+                    dsq = zmap.pop(0)
+                    if verbose>0:
+                        print 'dsq',dsq,'board_state[dsq]','>'+board_state[dsq]+'<'
+                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
+                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'b':
+                            return True # relevant displacement operator at distance i
+                        zmap=[] # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
+                    else:
+                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                            zmap=[] # the direction is blocked
+
+            return False
+
+        def rest_check4():
+            for d in ['N','E','S','W']:
+                i=0
+                while i<len(bmap[sq][d]):
+                    dsq = bmap[sq][d][i]
+                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
+                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'r':
+                            return True # relevant displacement operator at distance i
+                        break # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
+                    else:
+                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                            break # the direction is blocked
+
+                    i+=1
+                    
+            for d in ['NE','SE','SW','NW']:
+                i=0
+                while i<len(bmap[sq][d]):
+                    dsq = bmap[sq][d][i]
+                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
+                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'b':
+                            return True # relevant displacement operator at distance i
+                        break # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
+                    else:
+                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
+                            break # the direction is blocked
+
+                    i+=1
+
+            return False
+
+        return pawns_check2() or knight_check2() or king_check2() or rest_check4()
     
         
     
