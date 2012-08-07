@@ -452,6 +452,7 @@ class game():
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
         old_board_state = ''
+        validated_move = None
         #pieces_count = 32
         #previous_move = None
         if testing != []:
@@ -501,7 +502,14 @@ class game():
             else:
                 start_stamp = time.clock()
                 if verbose>0:
-                    print 'AI starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
+                    print 'AI ('+self.turn['col']+') starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
+
+                if validated_move==None:
+                    validated_move=(self.zboard.piece_by_sq('g8'), '', 'm', 'g8', 'Ng8') #(wp@e4, 'e2', 'm', 'e4', 'e4')
+                    old_board_state = self.zboard.board.copy()
+                    
+                #print 'validated_move format',validated_move
+                
                 vm = self.AI_move(old_board_state,validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 #vm = self.AI_move(self.zboard.board.copy(),validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 # note: validated_move was previous_move, but since it has the same value...
@@ -513,7 +521,7 @@ class game():
                 # validated_move[0] is the piece object
                 # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
 
-                validated_move = (self.zboard.piece_by_sq(vm['origin']),'',vm['move'][0],vm['move'][1],vm['move'][2])
+                validated_move = (self.zboard.piece_by_sq(vm['origin']),vm['origin'],vm['move'][0],vm['move'][1],vm['move'][2])
                 ## ~~ self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
                 # def exec_move(self,piece,exp,verbose=0):#,virtual=False):
                 

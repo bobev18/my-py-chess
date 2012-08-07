@@ -197,7 +197,8 @@ class AI():
         #print "action['origin']",action['origin']
         #print "action['move']",action['move']
         new_state = board(boardstate)
-        new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
+        if action['origin'] != '':
+            new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
         
         if tcol=='w':
             pieces_set=new_state.whites[:]
