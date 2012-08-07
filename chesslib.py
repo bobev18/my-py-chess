@@ -218,21 +218,23 @@ class game():
         reductions = []
         # check for hist dependant moves
         if 'c' in [ z[0] for z in expansions]: #verify for O-O
+            #print 'exp',expansions
+            #print 'debug hist', self.white['hist'], self.black['hist']
             if piece.col=='w':
-                if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Ke1','Kxe1'] ]): #king moved
+                if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Ke1','Kxe1'] ]): #king moved
                     reductions.append([ z for z in expansions if z[2].count('O-O')>0 ][0] )
                 else:
-                    if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Rh1','Rxh1'] ]): #king's rook moved
+                    if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Rh1','Rxh1'] ]): #king's rook moved
                         reductions.append([ z for z in expansions if z[2].count('O')==2 ][0] )
-                    if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Ra1','Rxa1'] ]): #queen's rook moved
+                    if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Ra1','Rxa1'] ]): #queen's rook moved
                         reductions.append([ z for z in expansions if z[2].count('O')==3 ][0] )
             else:
-                if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Ke8','Kxe8'] ]): #king moved
+                if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Ke8','Kxe8'] ]): #king moved
                     reductions.append([ z for z in expansions if z[2].count('O-O')>0 ][0] )
                 else:
-                    if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Rh8','Rxh8'] ]): #king's rook moved
+                    if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Rh8','Rxh8'] ]): #king's rook moved
                         reductions.append([ z for z in expansions if z[2].count('O')==2 ][0] )
-                    if any([ mov in [ z[2] for z in self.white['hist'] ] for mov in ['Ra8','Rxa8'] ]): #queen's rook moved
+                    if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Ra8','Rxa8'] ]): #queen's rook moved
                         reductions.append([ z for z in expansions if z[2].count('O')==3 ][0] )
         if 'e' in [ z[0] for z in expansions]: # verify for en passan
             for e in [ z for z in expansions if z[0]=='e' ]:

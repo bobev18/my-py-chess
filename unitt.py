@@ -217,64 +217,14 @@ class boardTest(unittest.TestCase):
         self.assertTrue(self.zboard.sq_in_check('e2','b'))
         self.assertFalse(self.zboard.sq_in_check('f2','b'))
         self.assertFalse(self.zboard.sq_in_check('d2','b'))
-
-    def test_incheck_checks2(self):
         self.zboard.piecefy({'h8': 'br', 'h2': 'wp', 'h3': '  ', 'h1': 'wr', 'h6': 'bn', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': 'wp', 'd3': '  ', 'd1': 'wq', 'g7': 'bp', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': 'wn', 'g8': '  ', 'c8': 'bb', 'c3': '  ', 'c2': 'wp', 'c1': 'wb', 'c7': 'bp', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': 'wp', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'bp', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'bp', 'b1': 'wn', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': 'wr', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': 'bk', 'a7': 'bp', 'a6': '  ', 'e5': '  ', 'e4': 'wp', 'e7': 'bp', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
-        self.assertTrue(self.zboard.sq_in_check2('e8','w'))
+        self.assertTrue(self.zboard.sq_in_check('e8','w'))
+
+        self.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'wp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': '  ', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
+        #print '\n'+self.zboard.show()
+        #print self.zboard.valids(self.zboard.piece_by_sq('d8'))
+        self.assertFalse(('m', 'c7', 'Kc7')in self.zboard.valids(self.zboard.piece_by_sq('d8')))
         
-
-    """
-    def test_validate_against_checks(self):
-        #note:since we dont have the the game class, we will use the _piecefy_ to reset the board back after executing every expansion for evaluation
-        self.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wq', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': 'bn', 'c8': 'bb', 'c3': 'bn', 'c2': '  ', 'c1': 'wb', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wb', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': 'wn', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
-        #print('\n'+self.zboard.show())
-
-        resulting_expansions = {}
-        for pi in self.zboard.fullset():
-            zkey = pi.sq # original position of the piece we're working with denotes the key for the results
-            if pi.col == 'w':
-                oposite_col = 'b'
-            else:
-                oposite_col = 'w'
-            reductions = [] # list of the moves which will be excluded form the expansions, due to opening check
-            unchecked_expansions = pi.expand(self.zboard.board)
-            for e in unchecked_expansions:
-                #restore position  - we will use the _piecefy_ to reset the board back after executing every expansion for evaluation
-                newboard = chesslib.board()
-                newboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wq', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': 'bn', 'c8': 'bb', 'c3': 'bn', 'c2': '  ', 'c1': 'wb', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wb', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': 'wn', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
-                p = newboard.piece_by_sq(zkey) #the piece on the new board that is on the same sq as the original
-                #execute move
-                newboard.exec_move(p,e)
-
-                #if zkey == 'e4':
-                #    print('\n'+newboard.show())
-                
-                if p.type == 'k':
-                    if newboard.sq_in_check(p.sq,oposite_col):
-                        reductions.append(e)
-                else:
-                    #if zkey == 'e4':
-                    #    #print('\n'+newboard.show(),'checking check against e1')
-                    #    print('~',e,newboard.sq_in_check('e1',oposite_col,1))
-                        
-                    if p.col == 'w':
-                        if newboard.sq_in_check('e1',oposite_col):
-                            reductions.append(e)
-                    else:
-                        if newboard.sq_in_check('e8',oposite_col):
-                            reductions.append(e)
-
-                del(newboard)
-
-            resulting_expansions[zkey] = [x for x in unchecked_expansions if x not in reductions]
-
-        # the knight at e4, will have the expansion list reduced to []
-        self.assertEqual([],resulting_expansions['e4']) 
-        #bishop at d7 previously had [('m', 'f5', 'Bf5'),('m', 'g4', 'Bg4'),('m', 'e6', 'Be6'),('t', 'b5', 'Bxb5'),('m', 'c6', 'Bc6'),('m', 'h3', 'Bh3')], but now
-        self.assertEqual(set([('t', 'b5', 'Bxb5'),('m', 'c6', 'Bc6')]),set(resulting_expansions['d7']))
-        #king at e1 -- validated the move to e2 as it's hit by the knight at c3
-        self.assertFalse(('m','e2','Ke2') in resulting_expansions['e1']) # no validation yet
-    """
 
     def test_validate_against_checks(self):
         #note:since we dont have the the game class, we will use the _piecefy_ to reset the board back after executing every expansion for evaluation
@@ -449,6 +399,7 @@ class boardTest(unittest.TestCase):
 20. Qxh5 Qxc2'''
         """
         #zgame.zboard.piecefy({'h8': 'br', 'h2': 'wp', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bp', 'd4': 'bn', 'd5': '  ', 'd2': '  ', 'd3': 'wp', 'd1': 'wq', 'g7': 'bp', 'g6': '  ', 'g5': 'wb', 'g4': '  ', 'g3': '  ', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': '  ', 'c7': 'bp', 'c6': '  ', 'c5': '  ', 'c4': 'wb', 'f1': '  ', 'f2': 'wp', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': 'bn', 'f7': 'bp', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': 'wp', 'a2': '  ', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'bp', 'e4': 'wp', 'e7': 'bk', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
+        zgame.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'wp', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         #cProfile.run('zgame.cycle(aidepth=4)')
         zgame.cycle(aidepth=4)
         #print('raboti li',file=zgame.log)
