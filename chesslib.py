@@ -254,14 +254,14 @@ class game():
 
         # add disambiguations based on other pieces of the same type being able to get to the same spot
         if piece.col == 'w':
-            set_to_check = self.zboard.whites
+            set_to_disambiguate = self.zboard.whites
         else:
-            set_to_check = self.zboard.blacks
-        disambiguations = []
-        set_to_check = [ z for z in set_to_check if z.type == piece.type and z.sq != piece.sq and z.type in ['r','n','b','q'] ] # we can have multiple Q after promotion
-        self.logit('set to check for disambiguations:',set_to_check)
-        if len(set_to_check)>0:
-            for p2c in set_to_check:
+            set_to_disambiguate = self.zboard.blacks
+        #disambiguations = []
+        set_to_disambiguate = [ z for z in set_to_disambiguate if z.type == piece.type and z.sq != piece.sq and z.type in ['r','n','b','q'] ] # we can have multiple Q after promotion
+        self.logit('set to check for disambiguations:',set_to_disambiguate)
+        if len(set_to_disambiguate)>0:
+            for p2c in set_to_disambiguate:
                 check_exp = self.zboard.valids(p2c)
                 
                 for e in check_exp:

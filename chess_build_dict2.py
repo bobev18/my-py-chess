@@ -117,14 +117,16 @@ for sq in sqs:
             if y==2:
                 sqs[sq][p]['m2']=[p2s(disp)]
             disp = x,y+1
-            sqs[sq][p]['m'].append(p2s(disp))
+            if y in range(2,7):
+                sqs[sq][p]['m'].append(p2s(disp))
             if y==7:
                 sqs[sq][p]['p']=[ p2s(disp)+z_ for z_ in ['R','N','B','Q']]
             disp = x-1,y+1
             sqs[sq][p]['+']=[]
             sqs[sq][p]['e']=[]
             for disp in [(x-1,y+1),(x+1,y+1)]:
-                sqs[sq][p]['t'].append(p2s(disp)) #'wp@(x,2<=y<=6),b*@(x+-1,y+1)': 'take(wp,x+-1,y+1)'
+                if y in range(2,7):
+                    sqs[sq][p]['t'].append(p2s(disp)) #'wp@(x,2<=y<=6),b*@(x+-1,y+1)': 'take(wp,x+-1,y+1)'
                 if y==7:
                     sqs[sq][p]['+'].extend([ p2s(disp)+z_ for z_ in ['R','N','B','Q']])
                 if y==5:
@@ -135,14 +137,16 @@ for sq in sqs:
             if y==7:
                 sqs[sq][p]['m2']=[p2s(disp)]
             disp = x,y-1
-            sqs[sq][p]['m'].append(p2s(disp))
+            if y in range(3,8):
+                sqs[sq][p]['m'].append(p2s(disp))
             if y==2:
                 sqs[sq][p]['p']=[p2s(disp)+z_ for z_ in ['R','N','B','Q']]
             disp = x-1,y-1
             sqs[sq][p]['+']=[]
             sqs[sq][p]['e']=[]
             for disp in [(x-1,y-1),(x+1,y-1)]:
-                sqs[sq][p]['t'].append(p2s(disp)) #'wp@(x,2<=y<=6),b*@(x+-1,y+1)': 'take(wp,x+-1,y+1)'
+                if y in range(3,8):
+                    sqs[sq][p]['t'].append(p2s(disp)) #'wp@(x,2<=y<=6),b*@(x+-1,y+1)': 'take(wp,x+-1,y+1)'
                 if y==2:
                     sqs[sq][p]['+'].extend([p2s(disp)+z_ for z_ in ['R','N','B','Q']])
                 if y==4:
@@ -176,10 +180,10 @@ for sq in sqs:
         
         #castle
         if tip == 'k':
-            if col == 'w' and sq == 'e1': sqs[sq][p]['c'].append(p2s((x+2,y)))
-            if col == 'b' and sq == 'e8': sqs[sq][p]['c'].append(p2s((x+2,y)))
-            if col == 'w' and sq == 'e1': sqs[sq][p]['c'].append(p2s((x-2,y)))
-            if col == 'b' and sq == 'e8': sqs[sq][p]['c'].append(p2s((x-2,y)))
+            if sq == 'e1': sqs[sq][p]['c'].append(p2s((x+2,y)))
+            if sq == 'e8': sqs[sq][p]['c'].append(p2s((x+2,y)))
+            if sq == 'e1': sqs[sq][p]['c'].append(p2s((x-2,y)))
+            if sq == 'e8': sqs[sq][p]['c'].append(p2s((x-2,y)))
 
         rez = [ z for z in rez if z.count('n/a')==0] #excludes out of the board expansions
         if len(rez)>0:
