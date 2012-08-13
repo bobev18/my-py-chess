@@ -52,6 +52,8 @@ p2s2d = {(1,1):"a1",(1,2):"a2",(1,3):"a3",(1,4):"a4",(1,5):"a5",(1,6):"a6",(1,7)
         (7,1):"g1",(7,2):"g2",(7,3):"g3",(7,4):"g4",(7,5):"g5",(7,6):"g6",(7,7):"g7",(7,8):"g8",
         (8,1):"h1",(8,2):"h2",(8,3):"h3",(8,4):"h4",(8,5):"h5",(8,6):"h6",(8,7):"h7",(8,8):"h8",}
 
+s2p = {'f1': (6, 1), 'f2': (6, 2), 'f3': (6, 3), 'f4': (6, 4), 'b2': (2, 2), 'f6': (6, 6), 'f7': (6, 7), 'h2': (8, 2), 'h3': (8, 3), 'h1': (8, 1), 'h6': (8, 6), 'h7': (8, 7), 'h4': (8, 4), 'h5': (8, 5), 'b4': (2, 4), 'b5': (2, 5), 'b6': (2, 6), 'b7': (2, 7), 'b1': (2, 1), 'd8': (4, 8), 'c2': (3, 2), 'd6': (4, 6), 'd7': (4, 7), 'd4': (4, 4), 'd5': (4, 5), 'b8': (2, 8), 'c1': (3, 1), 'd1': (4, 1), 'f5': (6, 5), 'c7': (3, 7), 'e5': (5, 5), 'd3': (4, 3), 'f8': (6, 8), 'c5': (3, 5), 'h8': (8, 8), 'c4': (3, 4), 'g7': (7, 7), 'g6': (7, 6), 'g5': (7, 5), 'g4': (7, 4), 'g3': (7, 3), 'g2': (7, 2), 'g1': (7, 1), 'g8': (7, 8), 'a1': (1, 1), 'a3': (1, 3), 'a2': (1, 2), 'a5': (1, 5), 'e8': (5, 8), 'a7': (1, 7), 'a6': (1, 6), 'c3': (3, 3), 'e4': (5, 4), 'e7': (5, 7), 'e6': (5, 6), 'e1': (5, 1), 'c6': (3, 6), 'e3': (5, 3), 'e2': (5, 2), 'b3': (2, 3), 'd2': (4, 2), 'a8': (1, 8), 'c8': (3, 8), 'a4': (1, 4)}
+
 bmap = {
 'f1':{'king': ['f2', 'g2', 'g1', 'e1', 'e2'], 'E': ['g1', 'h1'], 'knight': ['e3', 'd2', 'g3', 'h2'], 'wpawn': [], 'NE': ['g2', 'h3'], 'N': ['f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8'], 'bpawn': ['g2', 'e2'], 'S': [], 'W': ['e1', 'd1', 'c1', 'b1', 'a1'], 'SW': [], 'SE': [], 'NW': ['e2', 'd3', 'c4', 'b5', 'a6']},
 'h8':{'king': ['h7', 'g7', 'g8'], 'E': [], 'knight': ['f7', 'g6'], 'wpawn': ['g7'], 'NE': [], 'N': [], 'bpawn': [], 'S': ['h7', 'h6', 'h5', 'h4', 'h3', 'h2', 'h1'], 'W': ['g8', 'f8', 'e8', 'd8', 'c8', 'b8', 'a8'], 'SW': ['g7', 'f6', 'e5', 'd4', 'c3', 'b2', 'a1'], 'SE': [], 'NW': []},
@@ -145,37 +147,42 @@ class MoveException(Exception):
 
 class board():
     def __init__(self,board_state=''):
+        self.whites = []
+        self.blacks = []
+        self.backtrack = []
+        self.wk = ''
+        self.bk = ''
         if board_state == '':
             self.board = emptyboardinit.copy()
-            self.whites = []
-            self.blacks = []
         else:
             self.piecefy(board_state)
 
     def initialset(self):
         self.piecefy(plainboardinit)
-    
+
     def piecefy(self,board_state):
         self.board = board_state.copy()
         self.whites = []
         self.blacks = []
-        for sq in self.board.keys():
+        for sq in self.board:
             if self.board[sq]!='  ':
                 if self.board[sq][0]=='w':
                     self.whites.append(piece(self.board[sq][0],self.board[sq][1],sq))
+                    if self.board[sq][1]=='k':
+                        self.wk = sq
                 else:
                     self.blacks.append(piece(self.board[sq][0],self.board[sq][1],sq))
+                    if self.board[sq][1]=='k':
+                        self.bk = sq
 
     def fullset(self):
         return self.whites+self.blacks
 
-    """# no longer used
-    def boardify(self):
-        #fills the board based on list of pieces
-        self.board = self.emptyboardinit.copy()
-        for p in self.fullset():
-            self.board[p.sq]=p.col+p.type
-    """
+    def hashit(self,board_state=''):
+        if board_state == '':
+            return self.board["a1"]+self.board["a2"]+self.board["a3"]+self.board["a4"]+self.board["a5"]+self.board["a6"]+self.board["a7"]+self.board["a8"]+self.board["b1"]+self.board["b2"]+self.board["b3"]+self.board["b4"]+self.board["b5"]+self.board["b6"]+self.board["b7"]+self.board["b8"]+self.board["c1"]+self.board["c2"]+self.board["c3"]+self.board["c4"]+self.board["c5"]+self.board["c6"]+self.board["c7"]+self.board["c8"]+self.board["d1"]+self.board["d2"]+self.board["d3"]+self.board["d4"]+self.board["d5"]+self.board["d6"]+self.board["d7"]+self.board["d8"]+self.board["e1"]+self.board["e2"]+self.board["e3"]+self.board["e4"]+self.board["e5"]+self.board["e6"]+self.board["e7"]+self.board["e8"]+self.board["f1"]+self.board["f2"]+self.board["f3"]+self.board["f4"]+self.board["f5"]+self.board["f6"]+self.board["f7"]+self.board["f8"]+self.board["g1"]+self.board["g2"]+self.board["g3"]+self.board["g4"]+self.board["g5"]+self.board["g6"]+self.board["g7"]+self.board["g8"]+self.board["h1"]+self.board["h2"]+self.board["h3"]+self.board["h4"]+self.board["h5"]+self.board["h6"]+self.board["h7"]+self.board["h8"]
+        else:
+            return board_state["a1"]+board_state["a2"]+board_state["a3"]+board_state["a4"]+board_state["a5"]+board_state["a6"]+board_state["a7"]+board_state["a8"]+board_state["b1"]+board_state["b2"]+board_state["b3"]+board_state["b4"]+board_state["b5"]+board_state["b6"]+board_state["b7"]+board_state["b8"]+board_state["c1"]+board_state["c2"]+board_state["c3"]+board_state["c4"]+board_state["c5"]+board_state["c6"]+board_state["c7"]+board_state["c8"]+board_state["d1"]+board_state["d2"]+board_state["d3"]+board_state["d4"]+board_state["d5"]+board_state["d6"]+board_state["d7"]+board_state["d8"]+board_state["e1"]+board_state["e2"]+board_state["e3"]+board_state["e4"]+board_state["e5"]+board_state["e6"]+board_state["e7"]+board_state["e8"]+board_state["f1"]+board_state["f2"]+board_state["f3"]+board_state["f4"]+board_state["f5"]+board_state["f6"]+board_state["f7"]+board_state["f8"]+board_state["g1"]+board_state["g2"]+board_state["g3"]+board_state["g4"]+board_state["g5"]+board_state["g6"]+board_state["g7"]+board_state["g8"]+board_state["h1"]+board_state["h2"]+board_state["h3"]+board_state["h4"]+board_state["h5"]+board_state["h6"]+board_state["h7"]+board_state["h8"]
 
     def show(self,board_state=''):
         # direct print
@@ -207,7 +214,6 @@ class board():
         return None
 
     def relocate(self,piece_or_sq,tosq,verbose=0): # more in the meaning of relocate piece P (piece at SQ) to an empty square TOSQ
-        
         if type(piece_or_sq) == str:
             piece = self.piece_by_sq(piece_or_sq)
             orriginal_sq = piece_or_sq # will be needed to remove the piece from that sq
@@ -308,6 +314,17 @@ class board():
                 self.relocate('a'+piece.sq[1], 'd'+piece.sq[1]) # move the rook
                 self.relocate(piece,exp[1]) # move the king
 
+        if piece.type == 'k':
+            if piece.col == 'w':
+                self.wk = exp[1]
+            else:
+                self.bk = exp[1]
+
+        self.backtrack.append(self.hashit())
+        #if len(self.backtrack)>6: 
+        #    self.backtrack.pop(0)
+        # why should we limit it?
+
 
     def virt_move(self,piece,exp,verbose=0):#,virtual=False):
         # the function returns board state with applied given expansion EXP to the board
@@ -316,27 +333,33 @@ class board():
             print(']]]',piece,exp)
         new_state=self.board.copy()
 
-        if (new_state[exp[1]]=='  ' and exp[0] in ['t','+']) or (new_state[exp[1]]!='  ' and exp[0] in ['m','e','p','c']):
-            raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
+        #if (new_state[exp[1]]=='  ' and exp[0] in ['t','+']) or (new_state[exp[1]]!='  ' and exp[0] in ['m','e','p','c']):
+        #    raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
         
         if exp[0]=='m':
+            if new_state[exp[1]]!='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             #new_state = mv(new_state,piece.sq,exp[1])
             new_state[exp[1]] = piece.col+piece.type
             new_state[piece.sq] = '  '
         elif exp[0]=='t':
+            if new_state[exp[1]]=='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             new_state[exp[1]] = piece.col+piece.type
             new_state[piece.sq] = '  '
         elif exp[0]=='e':
+            if new_state[exp[1]]!='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             new_state[exp[1][0]+piece.sq[1]]= '  '  #exp[1][0] is the file of the pawn being taken, piece.sq[1] is the rank of the pawn executing the e.p. before the move
             new_state[exp[1]] = piece.col+piece.type
             new_state[piece.sq] = '  '
         elif exp[0]=='p':
+            if new_state[exp[1]]!='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             new_state[exp[1]] = piece.col+exp[2][-1].lower()
             new_state[piece.sq] = '  '
         elif exp[0]=='+':
+            if new_state[exp[1]]=='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             new_state[exp[1]] = piece.col+exp[2][-1].lower()
             new_state[piece.sq] = '  '
         elif exp[0]=='c':
+            if new_state[exp[1]]!='  ': raise MoveException('virtual move invalid ','piece',piece,'target sq:',new_state[exp[1]],'exp'+str(exp),'newstate \n',str(new_state))
             if exp[2].count('O')==2: #O-O # not exact matching, to avoid 'O-O!'
                 new_state[exp[1]] = piece.col+piece.type
                 new_state[piece.sq] = '  '
@@ -351,131 +374,202 @@ class board():
         if verbose > 0:
             print(self.show(new_state))
 
-        return new_state
+        if piece.type == 'k':
+            if piece.col == 'w':
+                wksq = exp[1]
+                bksq = self.bk
+            else:
+                wksq = self.wk
+                bksq = exp[1]
+        else:
+            wksq = self.wk
+            bksq = self.bk
+
+        return new_state,wksq,bksq
 
     def validate_move(self,piece,move,verbose=0):
         # only validates against position, cannot reject moves based on history conditions
         #verbose =1
+
+        check_state,wksq,bksq = self.virt_move(piece,move,verbose)
+        
         if piece.col == 'w':
-            oposite_col = 'b'
-            castle_row = '1'
+            opposite_col = 'b'
+            ksq = wksq
         else:
-            oposite_col = 'w'
-            castle_row = '8'
+            opposite_col = 'w'
+            ksq = bksq
 
-        #find king sq
-        if piece.type == 'k':
-            ksq = [move[1]]
-            if move[2].count('O')==2:
-                ksq.extend([piece.sq,'f'+castle_row])
-            if move[2].count('O')==3:
-                ksq.extend([piece.sq,'d'+castle_row])
-            #piece.sq -- The king is not currently in check
-            #'f'+castle_row -- The king does not pass through a square that is under attack by enemy pieces
-            #move[1] -- The king does not end up in check
+        if move[2]=='dxe5':
+            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
+            print 'ksq,opposite_col,piece.sq:',ksq,opposite_col,piece.sq,is_in_check
+            #print self.wk,self.bk
         else:
-            if verbose>0:
-                print('search for te king in:',self.fullset())
-            ksq = [ z.sq for z in self.fullset() if z.type=='k' and z.col==piece.col ]
-
-        check_state = self.virt_move(piece,move,verbose)
+            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
+        
         if verbose > 0:
             print 'move',move
             print 'checking check against',ksq
-            #print(check_state)
-            
-        #return not self.sq_in_check(ksq,oposite_col,self.virt_move(piece,move))
-        is_in_check = [ self.sq_in_check(z,oposite_col,check_state,verbose) for z in ksq ]
-        if verbose>0:
             print('is_in_check',is_in_check)
 
-        return not any(is_in_check) # if ANY of the possitions is in check, we should return False to indicate the move as invalid
+        return not is_in_check # False == invalid move
+
+    def validate_king_move(self,piece,move,verbose=0):
+        # only validates against position, cannot reject moves based on history conditions
+        #verbose =1
+
+        check_state,wksq,bksq = self.virt_move(piece,move,verbose)
+        
+        if piece.col == 'w':
+            opposite_col = 'b'
+            castle_row = '1'
+            ksq = wksq
+        else:
+            opposite_col = 'w'
+            castle_row = '8'
+            ksq = bksq
+
+        is_in_check = self.sq_in_check(move[1],opposite_col,check_state,verbose)  # the destination sq
+        if move[0]=='c':
+            is_in_check = is_in_check or self.sq_in_check(piece.sq,opposite_col,check_state,verbose) # the current sq
+            if move[2].count('O')==2:
+                ksq='f'+castle_row
+            if move[2].count('O')==3:
+                ksq='d'+castle_row
+            is_in_check = is_in_check or self.sq_in_check(ksq,opposite_col,check_state,verbose) # jump-over sq
+        if verbose > 0:
+            print 'move',move
+            print 'checking check against',ksq
+            print('is_in_check',is_in_check)
+
+        return not is_in_check # False == invalid move
 
     def sq_in_check(self,sq,by_col,b_state='',verbose=0):
-        if 1==0 and sq=='c7' and by_col=='w':
+        """
+        if 1==1 and sq=='f8' and by_col=='w':
             print '\n---------------'
             print 'sq',sq,'by col',by_col
             verbose = 1
         else:
             verbose = 0
-        
+        """
         if b_state=='':
             board_state = self.board
         else:
             board_state = b_state
 
-       
+        rez = False
 
-        def knight_check():
-            for dsq in bmap[sq]['knight']:
-                if board_state[dsq] == by_col+'n': return True
+        for dsq in bmap[sq]['knight']:
+            if board_state[dsq] == by_col+'n':
+                return True
 
-            return False
+        if by_col == 'w':
+            for dsq in bmap[sq]['wpawn']:
+                if board_state[dsq] == 'wp':
+                    return True
 
-        def pawns_check():
-            if by_col == 'w':
-                if verbose>0:
-                    print bmap[sq]['wpawn']
-                for dsq in bmap[sq]['wpawn']:
-                    if verbose >0:
-                        print 'dsq',dsq
-                    if board_state[dsq] == 'wp': return True
-            if by_col == 'b':
-                for dsq in bmap[sq]['bpawn']:
-                    if board_state[dsq] == 'bp': return True
+        else: #by_col == 'b':
+            for dsq in bmap[sq]['bpawn']:
+                if board_state[dsq] == 'bp':
+                    return True
                     
-            return False
+        for dsq in bmap[sq]['king']:
+            if board_state[dsq] == by_col+'k':
+                return True
 
-        def king_check():
-            for dsq in bmap[sq]['king']:
-                if board_state[dsq] == by_col+'k': return True
-
-            return False
-
-        def rest_check():
-            for d in ['N','E','S','W']:
-                i=0
-                while i<len(bmap[sq][d]):
-                    dsq = bmap[sq][d][i]
-                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
-                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'r':
-                            return True # relevant displacement operator at distance i
-                        break # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
-                    else:
-                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
-                            break # the direction is blocked
-
-                    i+=1
+        for d in ['N','E','S','W']:
+            for i in range(len(bmap[sq][d])):
+                dsq = bmap[sq][d][i]
+                if board_state[dsq] != '  ':
+                    if board_state[dsq] == by_col+'q' or board_state[dsq] == by_col+'r':
+                        return True # relevant displacement operator at distance i
+                    break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
                     
-            for d in ['NE','SE','SW','NW']:
-                i=0
-                while i<len(bmap[sq][d]):
-                    dsq = bmap[sq][d][i]
-                    if board_state[dsq][0] == by_col: # at the displacement square there is an enemy piece
-                        if board_state[dsq][1] == 'q' or board_state[dsq][1] == 'b':
-                            return True # relevant displacement operator at distance i
-                        break # the direction is blocked if an enemy piece doesnt operate in that direction;; IRRELEVANT displacement operator at distance i
-                    else:
-                        if board_state[dsq] != '  ': # not an empty field, which leaves the option of it having a piece of own color
-                            break # the direction is blocked
+        for d in ['NE','SE','SW','NW']:
+            for i in range(len(bmap[sq][d])):
+                dsq = bmap[sq][d][i]
+                if board_state[dsq] != '  ':
+                    if board_state[dsq] == by_col+'q' or board_state[dsq] == by_col+'b':
+                        return True # relevant displacement operator at distance i
+                    break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
+        
 
-                    i+=1
+        return False
 
+    def discover_check(self,ksq,by_col,msq,board_state,verbose=0): # msq = move sq
+        #if ksq=='d8' and msq=='d6':
+        #    verbose = 1
+            
+        kx,ky = s2p[ksq]
+        mx,my = s2p[msq]
+        dx=kx-mx
+        dy=ky-my
+        if verbose>0: print ksq,msq,kx,ky,mx,my,dx,dy
+        zdir=''
+        if dx == 0:
+            if dy>0:
+                zdir = 'S'
+            else:
+                zdir = 'N'
+        if dy == 0:
+            if dx >0:
+                zdir = 'W'
+            else:
+                zdir = 'E'
+        if dx==dy:
+            if dx>0:
+                zdir='SW'
+            else:
+                zdir='NE'
+        if dx==-dy:
+            if dx>0:
+                zdir='NW'
+            else:
+                zdir='SE'
+
+        if verbose>0: print 'zdir',zdir
+        if zdir=='':
             return False
 
-        return pawns_check() or knight_check() or king_check() or rest_check()
-    
+        if zdir in 'NESW':
+            actuator = 'r'
+        else:
+            actuator = 'b'
+        for i in range(len(bmap[ksq][zdir])):
+            dsq = bmap[ksq][zdir][i]
+            if verbose>0:
+                print 'dsq',dsq, board_state[dsq]
+            if board_state[dsq] != '  ':
+                if board_state[dsq][0] == by_col+'q' or board_state[dsq][0] == by_col+actuator:
+                    return True # relevant displacement operator at distance i
+                break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
+                    
+        return False
+
     def valids(self,piece, debug=0):
         # return list of hist independant valid moves for given piece
-        reductions = [] # list of the moves which will be excluded form the expansions, due to opening check
-        expansions = piece.expand(self.board)
+        #if piece.sq =='e8' and piece.type == 'k':
+        #    debug =1
+        #reduced = [] # list of the moves which will be returned
+        expansions = piece.expand(self.board) # these are from the dict -- basic check of move rules
+        # not checked against opening check, moving into check and casteling over beat square
+        if piece.type == 'k':
+            val_func = self.validate_king_move
+        else:
+            val_func = self.validate_move
+            
+        
         if debug>0:
             print(self.show())
             print('unreduced expansions:',expansions)
+        """
         for e in expansions:
-            if not self.validate_move(piece,e,debug):
-                reductions.append(e)
+            if self.validate_move(piece,e,debug):
+                reduced.append(e)
 
         if debug>0:
-            print('reductions:',reductions)
-        return [ z for z in expansions if z not in reductions ]
+            print('reduced:',reduced)
+        return reduced
+        """
+        return [z for z in expansions if val_func(piece,z,debug)]

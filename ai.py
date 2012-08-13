@@ -24,9 +24,6 @@ sqvalues = { 'a8':0.01, 'b8':0.01, 'c8':0.01, 'd8':0.01, 'e8':0.01, 'f8':0.01, '
 #global evaluated
 #evaluated = {}
 
-def hashit(board_state):
-    return board_state["a1"]+board_state["a2"]+board_state["a3"]+board_state["a4"]+board_state["a5"]+board_state["a6"]+board_state["a7"]+board_state["a8"]+board_state["b1"]+board_state["b2"]+board_state["b3"]+board_state["b4"]+board_state["b5"]+board_state["b6"]+board_state["b7"]+board_state["b8"]+board_state["c1"]+board_state["c2"]+board_state["c3"]+board_state["c4"]+board_state["c5"]+board_state["c6"]+board_state["c7"]+board_state["c8"]+board_state["d1"]+board_state["d2"]+board_state["d3"]+board_state["d4"]+board_state["d5"]+board_state["d6"]+board_state["d7"]+board_state["d8"]+board_state["e1"]+board_state["e2"]+board_state["e3"]+board_state["e4"]+board_state["e5"]+board_state["e6"]+board_state["e7"]+board_state["e8"]+board_state["f1"]+board_state["f2"]+board_state["f3"]+board_state["f4"]+board_state["f5"]+board_state["f6"]+board_state["f7"]+board_state["f8"]+board_state["g1"]+board_state["g2"]+board_state["g3"]+board_state["g4"]+board_state["g5"]+board_state["g6"]+board_state["g7"]+board_state["g8"]+board_state["h1"]+board_state["h2"]+board_state["h3"]+board_state["h4"]+board_state["h5"]+board_state["h6"]+board_state["h7"]+board_state["h8"]
-
 from board import board
 from board import MoveException
 
@@ -38,11 +35,14 @@ class AI():
 
         
         self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
-
+    
     def logit(self,*args):
+        pass
+        """
         data=' '.join([str(x) for x in args])
         with open(self.logfile,'a') as zlog:
             zlog.write(data+'\n')
+        """
 
     def clean_records(self,current_count):
         to_del = [ k for k in self.evaluated.keys() if 64-k.count('  ')>current_count]
@@ -55,16 +55,16 @@ class AI():
         val= 0.0
         for sq in board_state:
             if board_state[sq][0]=='w':
-                val+=pvalues[board_state[sq][1]]#+sqvalues[sq]
+                val+=pvalues[board_state[sq][1]]+sqvalues[sq]
             if board_state[sq][0]=='b': #this is needed to avoid evaluating the empty squares
-                val-=pvalues[board_state[sq][1]]#+sqvalues[sq]
+                val-=pvalues[board_state[sq][1]]+sqvalues[sq]
                 
         #print hashstate,'     rezval',val
         val = round(val,3)
         return val
     
-    def AIeval(self,board_state):
-        hashstate = hashit(board_state) #''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
+    def AIeval(self,board_state,hashstate):
+        #hashstate = board.hashit(board_state) #''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
         #if hashstate in self.evaluated.keys():
         try:
             return self.evaluated[hashstate]
@@ -207,14 +207,22 @@ class AI():
             pieces_set=new_state.blacks[:]
             opposite = 'w'
 
+        if new_state.wk=='' or new_state.bk =='':
+            print new_state.board
+            print "action['origin']",action['origin']
+            print "action['move']",action['move']
+            print "action['path']",action['path']
         
         # then, check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
         turn_in_check = False
+        w_in_check = new_state.sq_in_check(new_state.wk,'b',new_state.board)
+        b_in_check = new_state.sq_in_check(new_state.bk,'w',new_state.board)
+        """
         if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0:
             print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
         if len([ z for z in new_state.board.keys() if new_state.board[z]=='bk' ])==0:
             print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
-    
+            
         try:
             w_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='wk' ][0],'b',new_state.board)
             b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
@@ -225,7 +233,7 @@ class AI():
             print "action['path']",action['path']
             w_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='wk' ][0],'b',new_state.board)
             b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
-        
+        """
         
         if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
             turn_in_check = True
@@ -239,7 +247,7 @@ class AI():
         
         # if we have reached cutoff depth and the last move has no capture or check:
         if depth <=0:# and action['move'][2].count(self.capture_sign)==0 and not w_in_check and not b_in_check:
-            result['score'] = self.AIeval(new_state.board) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
+            result['score'] = self.AIeval(new_state.board,new_state.hashit()) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
             result['rem_exp']=exp_count
             self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
             return result # result = {'move':action,'score':State evaluation,'path':[],'rem_exp': # of possible expansion }

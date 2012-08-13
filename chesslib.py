@@ -250,6 +250,8 @@ class game():
                         reductions.append(e)
 
         self.logit('reductions:',reductions)
+        #if piece.sq=='e8' and piece.type=='k':
+        #    print 'exp',expansions,'red', reductions
         reduced = [ z for z in expansions if z not in reductions ]
 
         # add disambiguations based on other pieces of the same type being able to get to the same spot
@@ -285,6 +287,9 @@ class game():
         rez=[]
         for p in self.turnset():
             rez.extend(self.verified(p))
+            #print 'p',p,'rez',rez
+
+        #print 'mate rez (all avail moves for the pl in turn):', rez
 
         if len(rez)==0:
             if self.turn['is_in_check']:
@@ -292,6 +297,11 @@ class game():
             else:
                 return 'stalemate'
         else:
+            # repeated moves
+            if len(self.zboard.backtrack)>=6 and self.zboard.backtrack[-1]==self.zboard.backtrack[-3] and self.zboard.backtrack[-1]==self.zboard.backtrack[-5] and self.zboard.backtrack[-2]==self.zboard.backtrack[-4] and self.zboard.backtrack[-2]==self.zboard.backtrack[-6]:
+                print 'backtrack',self.zboard.backtrack
+                return 'stalemate'
+            
             return ''
         
     def decode_move(self, move_notation, piece_set):
@@ -363,7 +373,7 @@ class game():
             move_type='t'
             destination = zmove[zmove.find(capture_sign)+1:]
             if destination not in board_state.keys():
-                raise MoveException('capture sign detected in move, but destination ('+destination+') is not on the board')
+                raise MoveException('capture sign detected in move, but destination (',destination,') is not on the board')
             if  board_state[destination] == '  ':
                 if verbose>0: self.logit('capturing on empty sq with',destination[1],' in [3,6]')
                 if piece_type == 'p' and destination[1] in ['3','6']:
@@ -464,7 +474,7 @@ class game():
         eksit = False
         while not eksit and mate=='':
             if verbose>0:
-                print(self.show())
+                print self.show()
             
             if self.turn['player']=='human':
                 #take_time_stamp
@@ -539,6 +549,8 @@ class game():
                 if verbose >0: print validated_move
                 self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
 
+                #print self.show()
+
                 #memory reuse
                 if validated_move[2] == 't':
                     self.ai.clean_records(64 - self.zboard.board.values().count('  '))
@@ -549,12 +561,17 @@ class game():
 
                 #add move to full notation
                 if self.turn['col'] == 'w':
-                    opposite_col = self.zboard.blacks
+                    #opposite_col = self.zboard.blacks
+                    kp = self.zboard.bk
                 else:
-                    opposite_col = self.zboard.whites
-                kp = [ z for z in opposite_col if z.type=='k' ][0]
+                    #opposite_col = self.zboard.whites
+                    kp = self.zboard.wk
+
                 
-                check = self.zboard.sq_in_check(kp.sq,self.turn['col'])
+                #kp = [ z for z in opposite_col if z.type=='k' ][0]
+                
+                check = self.zboard.sq_in_check(kp,self.turn['col'])
+                #print 'cycle in_check check',check
 
 
                 #:run breaks on the line below because formatting returned by the AI differes from the one returned by the decode_move !!!
