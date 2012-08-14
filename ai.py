@@ -207,16 +207,18 @@ class AI():
             pieces_set=new_state.blacks[:]
             opposite = 'w'
 
-        if new_state.wk=='' or new_state.bk =='':
-            print new_state.board
+        if 'Rxd8' in action['path']:
+            print new_state.show()
             print "action['origin']",action['origin']
             print "action['move']",action['move']
             print "action['path']",action['path']
         
         # then, check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
         turn_in_check = False
-        w_in_check = new_state.sq_in_check(new_state.wk,'b',new_state.board)
-        b_in_check = new_state.sq_in_check(new_state.bk,'w',new_state.board)
+        # >>> the checks below are moved to the init of new_state i.e. init of board class
+        #w_in_check = new_state.sq_in_check(new_state.wk,'b',new_state.board)
+        #b_in_check = new_state.sq_in_check(new_state.bk,'w',new_state.board)
+
         """
         if len([ z for z in new_state.board.keys() if new_state.board[z]=='wk' ])==0:
             print(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'alpha',alpha,'beta',beta,'|action:',action)
@@ -235,7 +237,7 @@ class AI():
             b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
         """
         
-        if (w_in_check and tcol=='w') or (b_in_check and tcol=='b'):
+        if (new_state.winch and tcol=='w') or (new_state.binch and tcol=='b'):
             turn_in_check = True
 
         # and finaly get the expand list
@@ -249,7 +251,8 @@ class AI():
         if depth <=0:# and action['move'][2].count(self.capture_sign)==0 and not w_in_check and not b_in_check:
             result['score'] = self.AIeval(new_state.board,new_state.hashit()) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
             result['rem_exp']=exp_count
-            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
+            #self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',new_state.winch,'b+',new_state.binch,'|action:',action,'state val',result)
             return result # result = {'move':action,'score':State evaluation,'path':[],'rem_exp': # of possible expansion }
             # this is returned only towards minV/maxV functions
 
@@ -265,7 +268,7 @@ class AI():
                 score=-score
             result['score'] = score
             result['rem_exp']=0
-            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',new_state.winch,'b+',new_state.binch,'|action:',action,'state val',result)
             return result # this is/(should be) returned only towards minV/maxV functions
 
         # maximizing state

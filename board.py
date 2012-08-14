@@ -146,16 +146,20 @@ class MoveException(Exception):
         self.args = [a for a in args]
 
 class board():
-    def __init__(self,board_state=''):
+    def __init__(self,board_state='',winch=False,binch=False):
         self.whites = []
         self.blacks = []
         self.backtrack = []
         self.wk = ''
         self.bk = ''
+        self.winch = False
+        self.binch = False
         if board_state == '':
             self.board = emptyboardinit.copy()
         else:
             self.piecefy(board_state)
+            self.winch = self.sq_in_check(self.wk,'b')
+            self.binch = self.sq_in_check(self.bk,'w')
 
     def initialset(self):
         self.piecefy(plainboardinit)
@@ -400,12 +404,13 @@ class board():
             opposite_col = 'w'
             ksq = bksq
 
-        if move[2]=='dxe5':
-            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
+        is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
+        if not is_in_check and move[2]=='dxe5*' and piece.sq=='d6' and check_state['d5']=='  ' and check_state['d4']=='  ' and check_state['d3']=='  ' and check_state['d2']=='  ':# and check_state['d5']=='  ' and check_state['d5']=='  ' and check_state['d5']=='  ':
+            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,1)
             print 'ksq,opposite_col,piece.sq:',ksq,opposite_col,piece.sq,is_in_check
             #print self.wk,self.bk
-        else:
-            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
+
+            
         
         if verbose > 0:
             print 'move',move
@@ -414,7 +419,7 @@ class board():
 
         return not is_in_check # False == invalid move
 
-    def validate_king_move(self,piece,move,verbose=0):
+    def validate_all_moves(self,piece,move,verbose=0):
         # only validates against position, cannot reject moves based on history conditions
         #verbose =1
 
@@ -428,6 +433,9 @@ class board():
             opposite_col = 'w'
             castle_row = '8'
             ksq = bksq
+
+        if verbose>0:
+            print 'opp col',opposite_col,'ksq',ksq
 
         is_in_check = self.sq_in_check(move[1],opposite_col,check_state,verbose)  # the destination sq
         if move[0]=='c':
@@ -445,20 +453,24 @@ class board():
         return not is_in_check # False == invalid move
 
     def sq_in_check(self,sq,by_col,b_state='',verbose=0):
-        """
-        if 1==1 and sq=='f8' and by_col=='w':
+        if verbose >0:
+            print 300*'[]'
+        if 1==0 and sq=='d8' and by_col=='w':
             print '\n---------------'
             print 'sq',sq,'by col',by_col
             verbose = 1
         else:
             verbose = 0
-        """
+
         if b_state=='':
             board_state = self.board
         else:
             board_state = b_state
 
         rez = False
+        if sq=='':
+            print self.show(board_state)
+            print 'sq',sq, 'by',by_col
 
         for dsq in bmap[sq]['knight']:
             if board_state[dsq] == by_col+'n':
@@ -481,6 +493,8 @@ class board():
         for d in ['N','E','S','W']:
             for i in range(len(bmap[sq][d])):
                 dsq = bmap[sq][d][i]
+                if verbose>0:
+                    print i,')','dsq',dsq,'board_state[dsq]',board_state[dsq]
                 if board_state[dsq] != '  ':
                     if board_state[dsq] == by_col+'q' or board_state[dsq] == by_col+'r':
                         return True # relevant displacement operator at distance i
@@ -495,6 +509,8 @@ class board():
                     break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
         
 
+
+            
         return False
 
     def discover_check(self,ksq,by_col,msq,board_state,verbose=0): # msq = move sq
@@ -538,10 +554,12 @@ class board():
             actuator = 'b'
         for i in range(len(bmap[ksq][zdir])):
             dsq = bmap[ksq][zdir][i]
-            if verbose>0:
-                print 'dsq',dsq, board_state[dsq]
+            #if verbose>0:
+            #    print 'dsq',dsq, board_state[dsq]
             if board_state[dsq] != '  ':
-                if board_state[dsq][0] == by_col+'q' or board_state[dsq][0] == by_col+actuator:
+                if verbose>0:
+                    print 'checking',board_state[dsq],'==', by_col+'q',' or ',board_state[dsq],'==', by_col+actuator
+                if board_state[dsq] == by_col+'q' or board_state[dsq] == by_col+actuator:
                     return True # relevant displacement operator at distance i
                 break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
                     
@@ -549,13 +567,28 @@ class board():
 
     def valids(self,piece, debug=0):
         # return list of hist independant valid moves for given piece
-        #if piece.sq =='e8' and piece.type == 'k':
-        #    debug =1
+        #print '>'+self.show()+'<'
+        if self.show()=="""|br|bn|bb|bk|  |  |  |  |
+|bp|bp|  |  |bp|wb|bq|bp|
+|  |  |bp|wr|  |  |  |  |
+|  |  |  |  |wp|  |  |  |
+|  |  |  |  |  |  |  |  |
+|  |  |wn|  |  |wq|wp|wp|
+|wp|wp|wp|  |  |  |wp|  |
+|  |  |wk|  |  |  |  |wr|
+""" and (self.winch or self.binch):
+            #print self.show()
+            #print self.winch, self.binch
+            #print 
+            #if self.board['d6']=='wr':
+            debug =1
         #reduced = [] # list of the moves which will be returned
         expansions = piece.expand(self.board) # these are from the dict -- basic check of move rules
         # not checked against opening check, moving into check and casteling over beat square
-        if piece.type == 'k':
-            val_func = self.validate_king_move
+        if piece.type == 'k' or self.winch or self.binch:
+            val_func = self.validate_all_moves
+            if debug>0:
+                print 'func',val_func
         else:
             val_func = self.validate_move
             
