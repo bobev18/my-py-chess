@@ -568,7 +568,7 @@ class board():
     def valids(self,piece, debug=0):
         # return list of hist independant valid moves for given piece
         #print '>'+self.show()+'<'
-        if self.show()=="""|br|bn|bb|bk|  |  |  |  |
+        if debug >0 and self.show()=="""|br|bn|bb|bk|  |  |  |  |
 |bp|bp|  |  |bp|wb|bq|bp|
 |  |  |bp|wr|  |  |  |  |
 |  |  |  |  |wp|  |  |  |
@@ -582,6 +582,8 @@ class board():
             #print 
             #if self.board['d6']=='wr':
             debug =1
+        else:
+            debug =0
         #reduced = [] # list of the moves which will be returned
         expansions = piece.expand(self.board) # these are from the dict -- basic check of move rules
         # not checked against opening check, moving into check and casteling over beat square
