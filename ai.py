@@ -244,7 +244,10 @@ class AI():
         expansions = {}
         exp_count = 0
         for p in pieces_set:
-            expansions[p]=new_state.valids(p)
+            if p.type=='b':
+                expansions[p]=new_state.valids(p,1)
+            else:
+                expansions[p]=new_state.valids(p)
             exp_count += len(expansions[p])
         
         # if we have reached cutoff depth and the last move has no capture or check:
