@@ -245,6 +245,9 @@ class boardTest(unittest.TestCase):
         resulting_expansions = {}
         for p in self.zboard.fullset():
             zkey = p.sq # original position of the pece we're working with denotes the key for the results
+
+            ### The segment below was outdated since the introduction of method board.validate_all_moves
+            ### The method board.validate_move, should be used to validate moves by the king, or in situations where there is already a king in check
             if p.col == 'w':
                 oposite_col = 'b'
             else:
@@ -256,7 +259,10 @@ class boardTest(unittest.TestCase):
                 #    print(p,e,v)
                 #    v = self.zboard.validate_move(p,e,1)
                 #else:
-                v = self.zboard.validate_move(p,e)
+                if p.type == 'k':
+                    v = self.zboard.validate_all_moves(p,e)
+                else:
+                    v = self.zboard.validate_move(p,e)
                     
                 if not v:
                     reductions.append(e)
@@ -286,7 +292,7 @@ class boardTest(unittest.TestCase):
         reductions = [] # list of the moves which will be excluded form the expansions, due to opening check
         expansions = self.zboard.piece_by_sq('e1').expand(self.zboard.board)
         for e in expansions:
-            if not self.zboard.validate_move(self.zboard.piece_by_sq('e1'),e):
+            if not self.zboard.validate_all_moves(self.zboard.piece_by_sq('e1'),e): ## validate_all_moves because checking the king at e1
                 reductions.append(e)
         self.assertTrue(('c','c1','O-O-O') in reductions)
 
@@ -365,7 +371,7 @@ class boardTest(unittest.TestCase):
         
     def test_game_cycle_n_mate(self):
         zgame = chesslib.game()
-        self.assertEqual('1-0',zgame.cycle(['1. e4','e5','2. Bc4','a6','3. Qf3','b5','Qxf7#'],0,0))
+        self.assertEqual('1-0',zgame.cycle(['1. e4','e5','2. Bc4','a6','3. Qf3','b5','Qxf7#'],0,1))
         #print(zgame.full_notation)
 
     def test_game_cycle_stalemate(self):

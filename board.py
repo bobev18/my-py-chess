@@ -318,11 +318,14 @@ class board():
                 self.relocate('a'+piece.sq[1], 'd'+piece.sq[1]) # move the rook
                 self.relocate(piece,exp[1]) # move the king
 
-        if piece.type == 'k':
-            if piece.col == 'w':
+        if piece.col == 'w':
+            self.binch = self.sq_in_check(self.bk,piece.col,'',verbose)
+            if piece.type == 'k':
                 self.wk = exp[1]
-            else:
+        else:
+            if piece.type == 'k':
                 self.bk = exp[1]
+            self.winch = self.sq_in_check(self.wk,piece.col,'',verbose)
 
         self.backtrack.append(self.hashit())
         #if len(self.backtrack)>6: 
@@ -393,9 +396,10 @@ class board():
 
     def validate_move(self,piece,move,verbose=0):
         # only validates against position, cannot reject moves based on history conditions
-        #verbose =1
+        #if move==('m','e2','Ke2'):
+        #    verbose =1
 
-        check_state,wksq,bksq = self.virt_move(piece,move,verbose)
+        state_tobe_checked,wksq,bksq = self.virt_move(piece,move,verbose)
         
         if piece.col == 'w':
             opposite_col = 'b'
@@ -404,12 +408,15 @@ class board():
             opposite_col = 'w'
             ksq = bksq
 
-        is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,verbose)
-        if not is_in_check and move[2]=='dxe5*' and piece.sq=='d6' and check_state['d5']=='  ' and check_state['d4']=='  ' and check_state['d3']=='  ' and check_state['d2']=='  ':# and check_state['d5']=='  ' and check_state['d5']=='  ' and check_state['d5']=='  ':
-            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,check_state,1)
+        is_in_check = self.discover_check(ksq,opposite_col,piece.sq,state_tobe_checked,verbose)
+
+        #some debug
+        """
+        if not is_in_check and move[2]=='dxe5*' and piece.sq=='d6' and state_tobe_checked['d5']=='  ' and state_tobe_checked['d4']=='  ' and state_tobe_checked['d3']=='  ' and state_tobe_checked['d2']=='  ':# and state_tobe_checked['d5']=='  ' and state_tobe_checked['d5']=='  ' and state_tobe_checked['d5']=='  ':
+            is_in_check = self.discover_check(ksq,opposite_col,piece.sq,state_tobe_checked,1)
             print 'ksq,opposite_col,piece.sq:',ksq,opposite_col,piece.sq,is_in_check
             #print self.wk,self.bk
-
+        """
             
         
         if verbose > 0:
@@ -423,7 +430,7 @@ class board():
         # only validates against position, cannot reject moves based on history conditions
         #verbose =1
 
-        check_state,wksq,bksq = self.virt_move(piece,move,verbose)
+        state_tobe_checked,wksq,bksq = self.virt_move(piece,move,verbose)
         
         if piece.col == 'w':
             opposite_col = 'b'
@@ -437,14 +444,17 @@ class board():
         if verbose>0:
             print 'opp col',opposite_col,'ksq',ksq
 
-        is_in_check = self.sq_in_check(move[1],opposite_col,check_state,verbose)  # the destination sq
-        if move[0]=='c':
-            is_in_check = is_in_check or self.sq_in_check(piece.sq,opposite_col,check_state,verbose) # the current sq
-            if move[2].count('O')==2:
-                ksq='f'+castle_row
-            if move[2].count('O')==3:
-                ksq='d'+castle_row
-            is_in_check = is_in_check or self.sq_in_check(ksq,opposite_col,check_state,verbose) # jump-over sq
+        if piece.type=='k':
+            is_in_check = self.sq_in_check(move[1],opposite_col,state_tobe_checked,verbose)  # the destination sq
+            if move[0]=='c':
+                is_in_check = is_in_check or self.sq_in_check(piece.sq,opposite_col,state_tobe_checked,verbose) # the current sq
+                if move[2].count('O')==2:
+                    ksq='f'+castle_row
+                if move[2].count('O')==3:
+                    ksq='d'+castle_row
+                is_in_check = is_in_check or self.sq_in_check(ksq,opposite_col,state_tobe_checked,verbose) # jump-over sq
+        else:
+            is_in_check = self.sq_in_check(ksq,opposite_col,state_tobe_checked,verbose)  # the destination sq
         if verbose > 0:
             print 'move',move
             print 'checking check against',ksq
@@ -454,8 +464,8 @@ class board():
 
     def sq_in_check(self,sq,by_col,b_state='',verbose=0):
         if verbose >0:
-            print 300*'[]'
-        if 1==0 and sq=='d8' and by_col=='w':
+            print 30*'[]'+sq+'|'+by_col
+        if 1==0 and sq=='e8' and by_col=='w':
             print '\n---------------'
             print 'sq',sq,'by col',by_col
             verbose = 1
@@ -516,6 +526,7 @@ class board():
     def discover_check(self,ksq,by_col,msq,board_state,verbose=0): # msq = move sq
         #if ksq=='d8' and msq=='d6':
         #    verbose = 1
+        if verbose>0: print '--- discover_check(king square:',ksq,'by col:',by_col,'move sq:',msq, 'verbose:',verbose,') -----------'
             
         kx,ky = s2p[ksq]
         mx,my = s2p[msq]
@@ -548,10 +559,12 @@ class board():
         if zdir=='':
             return False
 
-        if zdir in 'NESW':
+        if zdir in ['N','E','S','W']: # have to use list, because >> SW in NESW == True
             actuator = 'r'
         else:
             actuator = 'b'
+
+        if verbose>0: print 'actuator:',actuator
         for i in range(len(bmap[ksq][zdir])):
             dsq = bmap[ksq][zdir][i]
             #if verbose>0:
@@ -560,22 +573,24 @@ class board():
                 if verbose>0:
                     print 'checking',board_state[dsq],'==', by_col+'q',' or ',board_state[dsq],'==', by_col+actuator
                 if board_state[dsq] == by_col+'q' or board_state[dsq] == by_col+actuator:
+                    if verbose>0: print '--- discover_check returns TRUE -----------'
                     return True # relevant displacement operator at distance i
                 break # the direction is blocked if an enemy piece doesnt operate in that direction or own piece
-                    
+
+        if verbose>0: print '--- discover_check returns FALSE -----------'
         return False
 
     def valids(self,piece, debug=0):
         # return list of hist independant valid moves for given piece
         #print '>'+self.show()+'<'
-        if debug >0 and self.show()=="""|br|bn|bb|bk|  |  |  |  |
-|bp|bp|  |  |bp|wb|bq|bp|
-|  |  |bp|wr|  |  |  |  |
-|  |  |  |  |wp|  |  |  |
+        if debug >0 and self.show()=="""|br|bn|bb|bq|bk|bb|bn|br|
+|  |  |bp|bp|  |wq|bp|bp|
+|bp|  |  |  |  |  |  |  |
+|  |bp|  |  |bp|  |  |  |
+|  |  |wb|  |wp|  |  |  |
 |  |  |  |  |  |  |  |  |
-|  |  |wn|  |  |wq|wp|wp|
-|wp|wp|wp|  |  |  |wp|  |
-|  |  |wk|  |  |  |  |wr|
+|wp|wp|wp|wp|  |wp|wp|wp|
+|wr|wn|wb|  |wk|  |wn|wr|
 """ and (self.winch or self.binch):
             #print self.show()
             #print self.winch, self.binch

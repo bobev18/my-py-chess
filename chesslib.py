@@ -209,10 +209,10 @@ class game():
         """
         
             
-    def verified(self,piece):
+    def verified(self,piece,verbose=0):
         #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
         self.logit('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece)
-        expansions = self.zboard.valids(piece)
+        expansions = self.zboard.valids(piece,verbose)
         #print('expansions',expansions,file=self.log)
         self.logit('expansions',expansions)
         reductions = []
@@ -283,15 +283,23 @@ class game():
 
         return reduced
 
-    def mate(self):
+    def mate(self, verbose=0):
         rez=[]
         for p in self.turnset():
-            rez.extend(self.verified(p))
-            #print 'p',p,'rez',rez
+            temp_rez=self.verified(p,verbose)
+            rez.extend(temp_rez)
+            if verbose>0:
+                print 'p',p,'rez',temp_rez
 
-        #print 'mate rez (all avail moves for the pl in turn):', rez
+        if verbose>1:
+            print 'mate rez (all avail moves for the pl in turn):', rez
+        if verbose>0:
+            print 'len avail moves:', len(rez)
+            
 
         if len(rez)==0:
+            if verbose>0:
+                print 'player on turn is ',self.turn['col'],' and check against him is :',self.turn['is_in_check']
             if self.turn['is_in_check']:
                 return 'mate'
             else:
@@ -548,6 +556,9 @@ class game():
                 #execute move
                 if verbose >0: print validated_move
                 self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
+                if verbose>1:
+                    print 'self.zboard.winch & binch:',self.zboard.winch,self.zboard.binch
+                    print 'self.turn["col"] ',self.turn['col'] 
 
                 #print self.show()
 
@@ -570,7 +581,7 @@ class game():
                 
                 #kp = [ z for z in opposite_col if z.type=='k' ][0]
                 
-                check = self.zboard.sq_in_check(kp,self.turn['col'])
+                check = self.zboard.sq_in_check(kp,self.turn['col'],verbose=0)
                 #print 'cycle in_check check',check
 
 
@@ -592,7 +603,12 @@ class game():
                 #calculating the 'in_check' value
                 self.turn['is_in_check'] = check
                 #check if mate or stalemate
-                mate = self.mate()
+                mate = self.mate(verbose=0)
+                if verbose>1:
+                    print 'self.zboard.winch & binch:',self.zboard.winch,self.zboard.binch
+                    print 'self.turn["col"] ',self.turn['col'] 
+                    print 'self.turn["is_in_check"] ',self.turn['is_in_check'] 
+                    print 'mate detected as',mate
         
         # --------- end of while
         if verbose>0:
