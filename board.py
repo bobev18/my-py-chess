@@ -227,7 +227,8 @@ class board():
 
         if self.piece_by_sq(tosq) != None:
             msg = 'Are you blind - there is another piece at that spot: '+repr(self.piece_by_sq(tosq))
-            print self.show()
+            if verbose>0:
+                print msg+'\n'+self.show()
             raise MoveException(msg)
 
         if piece == None:

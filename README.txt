@@ -50,11 +50,13 @@ TODOs:
      ~ state with no check/capture, with key move on depth 4
      ~ state with check - with key move beyond depth 4
      ~ capture collision (whether to initiate exchange or no)
+   = add tests for draws by "imposible to mate" i.e. king and knight vs king
 
  - Conceptual
    = extract all log functionality to class/decorators
    = experiment with dynamic switch of classes - save game state, init new class objects, load state
 
-
-
+ - Bugs
+   = Currently catches only king vs king, and should catch draws of King+light vs king & etc
+   = 
 

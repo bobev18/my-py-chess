@@ -284,6 +284,12 @@ class game():
         return reduced
 
     def mate(self, verbose=0):
+
+        # draw - no one could possibly mate
+        if len(self.zboard.whites)+len(self.zboard.blacks)==2:
+            return 'stalemate'
+
+        # reduced ability to move
         rez=[]
         for p in self.turnset():
             temp_rez=self.verified(p,verbose)
@@ -306,8 +312,10 @@ class game():
                 return 'stalemate'
         else:
             # repeated moves
-            if len(self.zboard.backtrack)>=6 and self.zboard.backtrack[-1]==self.zboard.backtrack[-3] and self.zboard.backtrack[-1]==self.zboard.backtrack[-5] and self.zboard.backtrack[-2]==self.zboard.backtrack[-4] and self.zboard.backtrack[-2]==self.zboard.backtrack[-6]:
-                print 'backtrack',self.zboard.backtrack
+            #if len(self.zboard.backtrack)>=6 and self.zboard.backtrack[-1]==self.zboard.backtrack[-3] and self.zboard.backtrack[-1]==self.zboard.backtrack[-5] and self.zboard.backtrack[-2]==self.zboard.backtrack[-4] and self.zboard.backtrack[-2]==self.zboard.backtrack[-6]:
+            if len(self.zboard.backtrack)>0 and self.zboard.backtrack.count(self.zboard.backtrack[-1])>=3:
+                if verbose>0:
+                    print 'backtrack',self.zboard.backtrack
                 return 'stalemate'
             
             return ''
