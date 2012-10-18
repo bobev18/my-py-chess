@@ -228,7 +228,10 @@ class board():
         if self.piece_by_sq(tosq) != None:
             msg = 'Are you blind - there is another piece at that spot: '+repr(self.piece_by_sq(tosq))
             if verbose>0:
-                print msg+'\n'+self.show()
+                print msg+'\n'+'>>> board\n'+self.show()
+                print '>>> piece',piece
+                print '>>> orriginal_sq',orriginal_sq
+                print '>>> to sq',tosq
             raise MoveException(msg)
 
         if piece == None:
@@ -236,9 +239,10 @@ class board():
             raise MoveException(msg)
 
         if verbose>0:
-            print('>>> board',self)
-            print('>>> piece',piece)
-            print('>>> orriginal_sq',orriginal_sq)
+            print '>>> board\n'+self.show()
+            print '>>> piece',piece
+            print '>>> orriginal_sq',orriginal_sq
+            print '>>> to sq',tosq
             
 
         piece.sq = tosq
@@ -271,7 +275,7 @@ class board():
         del(piece) #? needed?
 
     def add(self,col,tip='',sq=''):
-        if tip=='' and sq=='':
+        if tip=='' and sq=='': # reads convention wq@g8
             sq = col[-2:]
             tip = col[1]
             col = col[0]
@@ -290,34 +294,107 @@ class board():
         #the following code covers for the boardify:
         self.board[p.sq]=p.col+p.type
 
-    def exec_move(self,piece,exp,verbose=0):#,virtual=False):
-        # the function that applies given expansion EXP to the piece set (and thus the board)
-        if type(piece) == int :
-            verbose=1
-        if verbose>0:
-            print(')))',piece,exp)
+    def prep_move(self,piece,exp,verbose=0):#,virtual=False):
+        # determines board action for given move
+        
+        actions=[]
+        undo=[]
         if exp[0]=='m':
-            self.relocate(piece,exp[1],verbose)
+            #self.relocate(piece,exp[1],verbose)
+            actions.append(['reloc',piece,exp[1]])
+            undo.append(['reloc',exp[1],piece.sq])
         elif exp[0]=='t':
-            self.take(exp[1]) # take the piece at the destiantion position 
-            self.relocate(piece,exp[1]) # move to the destination position
+            taken = self.piece_by_sq(exp[1])
+            #self.take(exp[1]) # take the piece at the destiantion position 
+            #self.relocate(piece,exp[1],verbose) # move to the destination position
+            actions.append(['take',exp[1]])
+            actions.append(['reloc',piece,exp[1]])
+            undo.append(['reloc',exp[1],piece.sq])
+            undo.append(['add',taken.col,taken.type,taken.sq])
         elif exp[0]=='e':
-            self.take(exp[1][0]+piece.sq[1]) #exp[1][0] is the file of the pawn being taken, piece.sq[1] is the rank of the pawn executing the e.p. before the move
-            self.relocate(piece,exp[1])
+            taken = self.piece_by_sq(exp[1][0]+piece.sq[1])
+            #self.take(exp[1][0]+piece.sq[1]) #exp[1][0] is the file of the pawn being taken, piece.sq[1] is the rank of the pawn executing the e.p. before the move
+            #self.relocate(piece,exp[1],verbose)
+            actions.append(['take',exp[1][0]+piece.sq[1]])
+            actions.append(['reloc',piece,exp[1]])
+            undo.append(['reloc',exp[1],piece.sq])
+            undo.append(['add',taken.col,taken.type,taken.sq])
         elif exp[0]=='p':
-            self.add(piece.col,exp[2][-1].lower(),exp[1])
-            self.take(piece)
+            #self.add(piece.col,exp[2][-1].lower(),exp[1])
+            #self.take(piece)
+            actions.append(['add',piece.col,exp[2][-1].lower(),exp[1]])
+            actions.append(['take',piece])
+            undo.append(['add',piece.col,piece.type,piece.sq])
+            undo.append(['take',exp[1]])
         elif exp[0]=='+':
-            self.take(exp[1]) # take the piece at the destination
-            self.add(piece.col,exp[2][-1].lower(),exp[1]) #add the prmo
-            self.take(piece) # remove the pawn
+            taken = self.piece_by_sq(exp[1])
+            #self.take(exp[1]) # take the piece at the destination
+            #self.add(piece.col,exp[2][-1].lower(),exp[1]) #add the prmo
+            #self.take(piece) # remove the pawn
+            actions.append(['take',exp[1]])
+            actions.append(['add',piece.col,exp[2][-1].lower(),exp[1]])
+            actions.append(['take',piece])
+            undo.append(['add',piece.col,piece.type,piece.sq])
+            undo.append(['take',exp[1]])
+            undo.append(['add',taken.col,taken.type,taken.sq])
         elif exp[0]=='c':
             if exp[2]=='O-O':
-                self.relocate('h'+piece.sq[1], 'f'+piece.sq[1]) # move the rook
-                self.relocate(piece,exp[1]) # move the king
+                #self.relocate('h'+piece.sq[1], 'f'+piece.sq[1]) # move the rook
+                #self.relocate(piece,exp[1]) # move the king
+                actions.append(['reloc','h'+piece.sq[1], 'f'+piece.sq[1]])
+                actions.append(['reloc',piece, exp[1]])
+                undo.append(['reloc',exp[1],piece.sq])
+                undo.append(['reloc','f'+piece.sq[1],'h'+piece.sq[1]])
             else: #O-O-O
-                self.relocate('a'+piece.sq[1], 'd'+piece.sq[1]) # move the rook
-                self.relocate(piece,exp[1]) # move the king
+                #self.relocate('a'+piece.sq[1], 'd'+piece.sq[1]) # move the rook
+                #self.relocate(piece,exp[1]) # move the king
+                actions.append(['reloc','a'+piece.sq[1], 'd'+piece.sq[1]])
+                actions.append(['reloc',piece, exp[1]])
+                undo.append(['reloc',exp[1],piece.sq])
+                undo.append(['reloc','a'+piece.sq[1],'d'+piece.sq[1]])
+
+        
+        return actions,undo
+        
+    def undo_move(self,actions,verbose=0):
+        for a in actions:
+            if a[0]=='reloc':
+                self.relocate(a[1],a[2],verbose)
+            elif a[0]=='take':
+                self.take(a[1])
+            elif a[0]=='add':
+                self.add(a[1],a[2],a[3])
+            elif a[0]=='data':
+                self.wk = a[1]
+                self.bk = a[2]
+                self.winch = a[3]
+                self.binch = a[4]
+
+        self.backtrack.pop() # this is used to check on stalemate by repetition
+
+    def exec_move(self,piece,exp,verbose=0):#,virtual=False):
+        # the function that applies actions to the piece set (and thus the board)
+        #if type(piece) == int :
+        #    verbose=1
+        #if verbose>0:
+        #    print(')))',piece,exp)
+
+        if verbose>0:
+            print 'piece',piece
+            print 'exp',exp
+        actions, undo = self.prep_move(piece,exp,verbose)
+        if verbose>0:
+            print 'actions',actions
+        for a in actions:
+            if a[0]=='reloc':
+                self.relocate(a[1],a[2],verbose)
+            elif a[0]=='take':
+                self.take(a[1])
+            elif a[0]=='add':
+                self.add(a[1],a[2],a[3])
+
+
+        self.backtrack.append(self.hashit()) # this is used to check on stalemate by repetition
 
         if piece.col == 'w':
             self.binch = self.sq_in_check(self.bk,piece.col,'',verbose)
@@ -328,11 +405,9 @@ class board():
                 self.bk = exp[1]
             self.winch = self.sq_in_check(self.wk,piece.col,'',verbose)
 
-        self.backtrack.append(self.hashit())
-        #if len(self.backtrack)>6: 
-        #    self.backtrack.pop(0)
-        # why should we limit it?
-
+        undo.append(['data',self.wk,self.bk,self.winch,self.binch,])
+        return undo
+            
 
     def virt_move(self,piece,exp,verbose=0):#,virtual=False):
         # the function returns board state with applied given expansion EXP to the board

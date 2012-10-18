@@ -59,6 +59,7 @@ class game():
         self.black = {'col':'b', 'player':bplayer, 'time':clock, 'hist': [], 'is_in_check':False}
         self.turn = self.white
         self.turn_count = 1
+        self.undo_stack = []
         self.ai = AI()
         self.full_notation = '' # quite as the values in hist, but with the count and # + ? !
         with open(logfile,'w') as f:
@@ -110,9 +111,16 @@ class game():
         action = {'origin':lastmove[1],'move':lm_move_triplet,'path':[]}
         #print 'action',action,'init_borad_state',init_borad_state
         #rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
-        rrr = self.ai.Value(init_borad_state,self.turn['col'],depth,depth,-999,999,action)
-        print '\n'.join([str(x)+':'+str(rrr[x]) for x in rrr])
-        print '-'*10
+
+        #commented out on 18.Oct.2012 3am
+        #rrr = self.ai.Value(init_borad_state,self.turn['col'],depth,depth,-999,999,action)
+        ai_board = board(init_borad_state)
+        rrr = self.ai.Value(ai_board,self.turn['col'],depth,depth,-999,999,action)
+        ### DANGER - we pass separate board object, but retain the undo_stack of the current game!?
+
+        if verbose>0:
+            print '\n'.join([str(x)+':'+str(rrr[x]) for x in rrr])
+            print '-'*10
         ######
         ## getting all the moves is needed in order to validate the history related moves (self.verified uses self.black['hist'])
         ## TODO: pass parameter in to keep track of that validation (self.verified) ((could be func))
@@ -320,9 +328,13 @@ class game():
             
             return ''
         
-    def decode_move(self, move_notation, piece_set):
+    def decode_move(self, move_notation, piece_set,verbose=0):
         # format of the return is tuple of 5 elements: (piece, source_qs,move_type,destination_sq,notation)
         # first element is of class piece, and the rest are str
+        if move_notation=='exit':
+            return 'exit'
+        if verbose >1:
+            print 'move_notation', move_notation
         verbose = 1
         if verbose>0:
             self.logit('/n/n',5*'-','CALL decode_move','-'*5)
@@ -379,7 +391,8 @@ class game():
         #list pieces matching the found type
         filtered = [x for x in piece_set if x.type == piece_type.lower()]
         if len(filtered)==0:
-            raise MoveException('no piece of the needed type ('+piece_type.lower()+') is found in the piece set')
+            msg = 'no piece of the needed type ('+piece_type.lower()+') is found in the piece set'
+            raise MoveException(msg)
 
         move_type = ''
         enpassan = False
@@ -476,6 +489,14 @@ class game():
         if verbose >0:  self.logit('result:',(filtered[0],(move_type,destination,move)))
         return (filtered[0],filtered[0].sq,move_type,destination,move)
 
+    def undo(self, verbose=0):
+        if verbose>0:
+            print 'self.undo_stack',self.undo_stack
+        last = self.undo_stack.pop()
+        if verbose>0: 
+            print last
+        self.zboard.undo_move(last)
+
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
         old_board_state = ''
         validated_move = None
@@ -483,7 +504,7 @@ class game():
         #previous_move = None
         if testing != []:
             testing.append('exit')
-            human_function = lambda : self.decode_move(testing.pop(0),self.turnset())
+            human_function = lambda : self.decode_move(testing.pop(0),self.turnset(),verbose=0)
         else:
             human_function = self.prompt_human_move
         mate = self.mate()
@@ -563,7 +584,7 @@ class game():
                 
                 #execute move
                 if verbose >0: print validated_move
-                self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
+                self.undo_stack.append(self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4])))
                 if verbose>1:
                     print 'self.zboard.winch & binch:',self.zboard.winch,self.zboard.binch
                     print 'self.turn["col"] ',self.turn['col'] 

@@ -5,6 +5,7 @@
 #
 
 import re#, sys
+import copy
 #global max_eval_memory_size
 #max_eval_memory_size = 150000
 #global capture_sign
@@ -32,6 +33,7 @@ class AI():
         self.evaluated = {}
         self.max_eval_memory_size = 1000000
         self.capture_sign = 'x'
+        self.undo_stack = []
 
         
         self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
@@ -130,7 +132,9 @@ class AI():
     """
 
 
-    def maxValue(self,boardstate,tcol,depth,original_depth,alpha,beta,expansions, path):
+
+
+    def maxValue(self,ai_board,tcol,depth,original_depth,alpha,beta,expansions, path):
         if tcol=='w':
             opposite = 'b'
         else:
@@ -146,7 +150,7 @@ class AI():
                 #print 'min new_action path',e,e[2]
                 new_action['path']=path+[e[2]]
                 
-                result = self.Value(boardstate,opposite,depth-1,original_depth,alpha,beta,new_action)
+                result = self.Value(ai_board,opposite,depth-1,original_depth,alpha,beta,new_action)
                 result['path'].insert(0,e)
                 result['move']=new_action
                 if result['score']>score:
@@ -159,7 +163,7 @@ class AI():
 
         return best_result
 
-    def minValue(self,boardstate,tcol,depth,original_depth,alpha,beta,expansions, path):
+    def minValue(self,ai_board,tcol,depth,original_depth,alpha,beta,expansions, path):
         if tcol=='w':
             opposite = 'b'
         else:
@@ -175,7 +179,7 @@ class AI():
                 #print 'min new_action path',e,e[2]
                 new_action['path']=path+[e[2]]
                 
-                result = self.Value(boardstate,opposite,depth-1,original_depth,alpha,beta,new_action)
+                result = self.Value(ai_board,opposite,depth-1,original_depth,alpha,beta,new_action)
                 result['path'].insert(0,e)
                 result['move']=new_action
                 if result['score']<score:
@@ -188,7 +192,7 @@ class AI():
 
         return best_result
 
-    def Value(self,boardstate,tcol,depth,original_depth,alpha,beta,action):
+    def Value(self,ai_board,tcol,depth,original_depth,alpha,beta,action):
         depthindent=' '*(5-depth)
         result = {'move':action,'score':0,'path':[],'rem_exp':-1}
 
@@ -196,19 +200,22 @@ class AI():
         # first we need to push the move
         #print "action['origin']",action['origin']
         #print "action['move']",action['move']
-        new_state = board(boardstate)
+
+        # was new_state = board(boardstate)
+        print 'action',action
+        print self.undo_stack
         if action['origin'] != '':
-            new_state.exec_move(new_state.piece_by_sq(action['origin']),action['move'])
+            self.undo_stack.append(ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=1))
         
         if tcol=='w':
-            pieces_set=new_state.whites[:]
+            pieces_set=ai_board.whites[:] #[:] because we pop em
             opposite = 'b'
         else:
-            pieces_set=new_state.blacks[:]
+            pieces_set=ai_board.blacks[:]
             opposite = 'w'
 
         if 'Rxd8' in action['path']:
-            print new_state.show()
+            print ai_board.show()
             print "action['origin']",action['origin']
             print "action['move']",action['move']
             print "action['path']",action['path']
@@ -237,25 +244,26 @@ class AI():
             b_in_check = new_state.sq_in_check([ z for z in new_state.board if new_state.board[z]=='bk' ][0],'w',new_state.board)
         """
         
-        if (new_state.winch and tcol=='w') or (new_state.binch and tcol=='b'):
+        if (ai_board.winch and tcol=='w') or (ai_board.binch and tcol=='b'):
             turn_in_check = True
 
         # and finaly get the expand list
         expansions = {}
         exp_count = 0
         for p in pieces_set:
-            if p.type=='b':
-                expansions[p]=new_state.valids(p,1)
+            if p.type=='b': # probably 'b' triggers verbose.... 
+                expansions[p]=ai_board.valids(p,1)
             else:
-                expansions[p]=new_state.valids(p)
+                expansions[p]=ai_board.valids(p)
             exp_count += len(expansions[p])
         
         # if we have reached cutoff depth and the last move has no capture or check:
         if depth <=0:# and action['move'][2].count(self.capture_sign)==0 and not w_in_check and not b_in_check:
-            result['score'] = self.AIeval(new_state.board,new_state.hashit()) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
+            result['score'] = self.AIeval(ai_board.board,ai_board.hashit()) # r = tuple of the value for whites in the deepest state, and the value for blacks in the deepest state
             result['rem_exp']=exp_count
             #self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
-            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',new_state.winch,'b+',new_state.binch,'|action:',action,'state val',result)
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',ai_board.winch,'b+',ai_board.binch,'|action:',action,'state val',result)
+            ai_board.undo_move(self.undo_stack.pop())
             return result # result = {'move':action,'score':State evaluation,'path':[],'rem_exp': # of possible expansion }
             # this is returned only towards minV/maxV functions
 
@@ -271,19 +279,20 @@ class AI():
                 score=-score
             result['score'] = score
             result['rem_exp']=0
-            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',new_state.winch,'b+',new_state.binch,'|action:',action,'state val',result)
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',ai_board.winch,'b+',ai_board.binch,'|action:',action,'state val',result)
+            ai_board.undo_move(self.undo_stack.pop())
             return result # this is/(should be) returned only towards minV/maxV functions
 
         # maximizing state
         if tcol=='w':
-            rez = self.maxValue(new_state.board,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
+            rez = self.maxValue(ai_board,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
         if tcol=='b':
-            rez = self.minValue(new_state.board,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
+            rez = self.minValue(ai_board,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
         # rez === result in terms of structure and expected values :: result = {'move':action,'score':0,'path':[],'rem_exp':-1}
         # might need to adjust path here?
 
-        if 1==0: 
-            print 'boardstate', boardstate
+        if 1==1 and len(self.undo_stack)==0: 
+            print 'ai_board', ai_board.show()
             print 'tcol',tcol
             print 'depth',depth
             print 'original_depth',original_depth
@@ -294,6 +303,11 @@ class AI():
 
 
         #print 'z rez:', rez
+        
+        if len(self.undo_stack)>0:
+            ai_board.undo_move(self.undo_stack.pop()) # returns method undo_move from class board
+        else:
+            print 'everything'
         return rez
         #### - Note - ###
         # The max/min doesn't depend on the self_color, because if AI is playing White, it still needs to calculate

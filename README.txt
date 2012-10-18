@@ -19,6 +19,12 @@ So far:
 
 TODOs:
  - Main
+   = write UndoMove in Board class, that undoes a move given as argument
+      ~ decoding actions needed for undo by move notation is expensive - should determine them while executing, and save for future use
+      ~ I want to keep as little game details as possible in the board class (move 'backtrack' out), so the undo set of actions should be 
+         returned after execution of the move; They can be command + *args to be passed to Game level undo, which calls the board action methods
+         But if we do so, isn't it more logical to have the exec_move also on Game level?
+   = confirm that Game class keep history of the moves in suitable format to pass to Undo.
    = figure out a way to do more encapsulation on the classes
 *  = review and adjust naming conventions, clean up of commented out code
    = show move count

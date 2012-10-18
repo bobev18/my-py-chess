@@ -371,12 +371,41 @@ class boardTest(unittest.TestCase):
         zgame.zboard.piecefy({'h8': 'bk', 'h2': '  ', 'h3': '  ', 'h1': '  ', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': '  ', 'a8': '  ', 'd6': '  ', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': '  ', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': '  ', 'c8': '  ', 'c3': '  ', 'c2': '  ', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': '  ', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': '  ', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': '  ', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': '  ', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': 'wq', 'a4': '  '})
         self.assertEqual('1/2-1/2',zgame.cycle(['Kd1','Qd5+','2.Qd2','Qh1+','Qe1','Qd5','4.Qd2','Qh1+','5.Qe1','Qh5+','Qe2','Qh1','Qe1','Qd5'],0,verbose=0))# draw by repetition
 
+    def test_game_undo(self):
+        zgame = chesslib.game()
+        zgame.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': '  ', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': '  ', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': '  ', 'c8': '  ', 'c3': 'bn', 'c2': '  ', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': '  ', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
+        #print(zgame.show())
+        zgame.cycle(['Bxd7','Kd8','Rh7','Ra2','Rxa2','Qa5'],0,verbose=0)
+        zgame.undo()
+
+        self.assertEqual("""|  |  |  |bk|  |  |  |  |
+|  |wr|  |wb|  |  |  |wr|
+|  |  |  |  |  |  |  |  |
+|  |  |  |  |bq|  |  |  |
+|  |  |  |  |wn|  |  |  |
+|  |  |bn|  |  |  |  |  |
+|wr|  |  |  |  |  |  |  |
+|  |  |  |  |wk|  |  |  |
+""",zgame.zboard.show()) #before 'Qa5'
+
+        zgame.undo()
+        self.assertEqual("""|  |  |  |bk|  |  |  |  |
+|  |wr|  |wb|  |  |  |wr|
+|  |  |  |  |  |  |  |  |
+|  |  |  |  |bq|  |  |  |
+|  |  |  |  |wn|  |  |  |
+|  |  |bn|  |  |  |  |  |
+|br|  |  |  |  |  |  |  |
+|wr|  |  |  |wk|  |  |  |
+""",zgame.zboard.show()) #before 'Rxa2' #by black
+
     def test_game_ai_vs_ai(self):
         some_game = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
         some_game.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'wp', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         zgame = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
         zgame.zboard = copy.deepcopy(some_game.zboard)
-        zgame.cycle(aidepth=2,verbose=0)
+        zgame.cycle(aidepth=2,verbose=1) # results in 8 sec run when
+        print zgame.full_notation
         
 
     def test_game_cycle_ai(self):
