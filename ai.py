@@ -202,10 +202,10 @@ class AI():
         #print "action['move']",action['move']
 
         # was new_state = board(boardstate)
-        print 'action',action
-        print self.undo_stack
+        #print 'action',action
+        #print self.undo_stack
         if action['origin'] != '':
-            self.undo_stack.append(ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=1))
+            self.undo_stack.append(ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=0))
         
         if tcol=='w':
             pieces_set=ai_board.whites[:] #[:] because we pop em
@@ -291,7 +291,7 @@ class AI():
         # rez === result in terms of structure and expected values :: result = {'move':action,'score':0,'path':[],'rem_exp':-1}
         # might need to adjust path here?
 
-        if 1==1 and len(self.undo_stack)==0: 
+        if 1==0 and len(self.undo_stack)==0: 
             print 'ai_board', ai_board.show()
             print 'tcol',tcol
             print 'depth',depth
@@ -306,8 +306,7 @@ class AI():
         
         if len(self.undo_stack)>0:
             ai_board.undo_move(self.undo_stack.pop()) # returns method undo_move from class board
-        else:
-            print 'everything'
+
         return rez
         #### - Note - ###
         # The max/min doesn't depend on the self_color, because if AI is playing White, it still needs to calculate

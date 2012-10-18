@@ -377,7 +377,7 @@ class boardTest(unittest.TestCase):
         #print(zgame.show())
         zgame.cycle(['Bxd7','Kd8','Rh7','Ra2','Rxa2','Qa5'],0,verbose=0)
         zgame.undo()
-
+        #print(zgame.show())
         self.assertEqual("""|  |  |  |bk|  |  |  |  |
 |  |wr|  |wb|  |  |  |wr|
 |  |  |  |  |  |  |  |  |
@@ -387,8 +387,9 @@ class boardTest(unittest.TestCase):
 |wr|  |  |  |  |  |  |  |
 |  |  |  |  |wk|  |  |  |
 """,zgame.zboard.show()) #before 'Qa5'
-
+        
         zgame.undo()
+        #print(zgame.show())
         self.assertEqual("""|  |  |  |bk|  |  |  |  |
 |  |wr|  |wb|  |  |  |wr|
 |  |  |  |  |  |  |  |  |
@@ -404,8 +405,8 @@ class boardTest(unittest.TestCase):
         some_game.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'wp', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         zgame = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
         zgame.zboard = copy.deepcopy(some_game.zboard)
-        zgame.cycle(aidepth=2,verbose=1) # results in 8 sec run when
-        print zgame.full_notation
+        zgame.cycle(aidepth=4,verbose=0) # aidepth=2 results in about 8 sec run 
+        #print zgame.full_notation
         
 
     def test_game_cycle_ai(self):

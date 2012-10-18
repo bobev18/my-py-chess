@@ -272,20 +272,30 @@ class board():
         else:
             self.blacks.remove(piece)
 
-        del(piece) #? needed?
+        #del(piece) #? needed?
+        # if we del piece, and then undo by creating new one, some iterations over lists of pieces break
+        # it's better to keep the piece reference in the undo data
 
-    def add(self,col,tip='',sq=''):
-        if tip=='' and sq=='': # reads convention wq@g8
-            sq = col[-2:]
-            tip = col[1]
-            col = col[0]
+    def add(self,col,tip='',piece_or_sq=''):
+        if type(piece_or_sq) == str:
+            sq = piece_or_sq
+            if tip=='' and sq=='': # reads convention wq@g8
+                sq = col[-2:]
+                tip = col[1]
+                col = col[0]
 
-        if self.piece_by_sq(sq) != None:
-            msg = 'Are you blind - there is another piece at that spot: '+repr(self.piece_by_sq(tosq))
-            raise MoveException(msg)
+            if self.piece_by_sq(sq) != None:
+                msg = 'Are you blind - there is another piece at that spot: '+repr(self.piece_by_sq(tosq))
+                raise MoveException(msg)
+            #print(col,tip,sq)
+            # creates new piece
+            p = piece(col,tip,sq)
 
-        #print(col,tip,sq)
-        p = piece(col,tip,sq)
+        else: # i.e. piece_or_sq referrs to piece object
+            # reuse piece that has been taken off the board
+            p = piece_or_sq
+            col= p.col
+        
         if col == 'w':
             self.whites.append(p)
         else:
@@ -293,6 +303,7 @@ class board():
 
         #the following code covers for the boardify:
         self.board[p.sq]=p.col+p.type
+        #print '. piece',p,'p on board',self.board[p.sq]
 
     def prep_move(self,piece,exp,verbose=0):#,virtual=False):
         # determines board action for given move
@@ -310,7 +321,7 @@ class board():
             actions.append(['take',exp[1]])
             actions.append(['reloc',piece,exp[1]])
             undo.append(['reloc',exp[1],piece.sq])
-            undo.append(['add',taken.col,taken.type,taken.sq])
+            undo.append(['add',None,None,taken])
         elif exp[0]=='e':
             taken = self.piece_by_sq(exp[1][0]+piece.sq[1])
             #self.take(exp[1][0]+piece.sq[1]) #exp[1][0] is the file of the pawn being taken, piece.sq[1] is the rank of the pawn executing the e.p. before the move
@@ -318,13 +329,13 @@ class board():
             actions.append(['take',exp[1][0]+piece.sq[1]])
             actions.append(['reloc',piece,exp[1]])
             undo.append(['reloc',exp[1],piece.sq])
-            undo.append(['add',taken.col,taken.type,taken.sq])
+            undo.append(['add',None,None,taken])
         elif exp[0]=='p':
             #self.add(piece.col,exp[2][-1].lower(),exp[1])
             #self.take(piece)
             actions.append(['add',piece.col,exp[2][-1].lower(),exp[1]])
             actions.append(['take',piece])
-            undo.append(['add',piece.col,piece.type,piece.sq])
+            undo.append(['add',None,None,piece])
             undo.append(['take',exp[1]])
         elif exp[0]=='+':
             taken = self.piece_by_sq(exp[1])
@@ -334,9 +345,9 @@ class board():
             actions.append(['take',exp[1]])
             actions.append(['add',piece.col,exp[2][-1].lower(),exp[1]])
             actions.append(['take',piece])
-            undo.append(['add',piece.col,piece.type,piece.sq])
+            undo.append(['add',None,None,piece])
             undo.append(['take',exp[1]])
-            undo.append(['add',taken.col,taken.type,taken.sq])
+            undo.append(['add',None,None,taken])
         elif exp[0]=='c':
             if exp[2]=='O-O':
                 #self.relocate('h'+piece.sq[1], 'f'+piece.sq[1]) # move the rook
