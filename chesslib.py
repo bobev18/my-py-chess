@@ -80,7 +80,7 @@ class game():
         return mv #returns move or command
             
     def verified(self,piece,verbose=0):
-        #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
+        # uses prevalidate of checks and verifies any history dependent moves
         self.logit('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece)
         expansions = self.zboard.valids(piece,verbose)
         #print('expansions',expansions,file=self.log)
@@ -345,7 +345,7 @@ class game():
         if verbose>0: 
             print last
         self.zboard.undo_move(last)
-        self.turn['hist'].pop()  #  erase move from hist
+        self.white['hist'].pop()  #  erase move from hist
         #twice
         if verbose>0:
             print 'self.undo_stack',self.undo_stack
@@ -353,7 +353,7 @@ class game():
         if verbose>0: 
             print last
         self.zboard.undo_move(last)
-        self.turn['hist'].pop()  #  erase move from hist
+        self.black['hist'].pop()  #  erase move from hist
 
         #self.zboard.ak below are handled by the 'data' record on the board.undo, so they will be valid
         if self.turn['col'] == 'w':
@@ -364,7 +364,7 @@ class game():
         self.turn_count -=1 # regardless of current color, we are reversing entire turn, so no conditions...
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
-        old_board_state = ''
+        old_board_state = self.zboard.board.copy()
         validated_move = None
         mate = self.mate()
         eksit = False
@@ -422,14 +422,6 @@ class game():
                 start_stamp = time.clock()
                 if verbose>0:
                     print 'AI ('+self.turn['col']+') starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
-
-                #### the cheat below is to pick up AI vs AI test game from the middle
-                if validated_move==None:
-                    validated_move=(self.zboard.piece_by_sq('g8'), '', 'm', 'g8', 'Ng8') #(wp@e4, 'e2', 'm', 'e4', 'e4')
-                    old_board_state = self.zboard.board.copy()
-                ####  ===============================================================
-
-                #print 'validated_move format',validated_move
                 
                 vm = self.ai.AI_move(old_board_state,validated_move,self.turn['col'],self.white['hist'],self.black['hist'],aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 run_time = time.clock() - start_stamp
@@ -440,7 +432,6 @@ class game():
                 
             if not eksit and len(validated_move)>0:
                 #turn_time = now - stamp
-
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 old_board_state = self.zboard.board.copy() # used to create ai_board
                 
@@ -478,6 +469,8 @@ class game():
         # --------- end of while not eksit and mate=='':
         if verbose>0:
             print self.show()
+            print self.white['hist']
+            print self.black['hist']
             self.full_notation = '\n'.join([ str(i+1)+'. '+self.white['hist'][i]+' '+self.black['hist'][i] for i in range(len(self.black['hist']))])+ \
                                  ('\n'+str(len(self.white['hist']))+'. '+self.white['hist'][-1])*(len(self.black['hist'])<len(self.white['hist']))
 

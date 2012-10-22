@@ -171,7 +171,7 @@ class boardTest(unittest.TestCase):
         self.assertTrue(('c','c1','O-O-O') in self.zboard.piece_by_sq('e1').expand(self.zboard.board))
         self.assertTrue(('c','g1','O-O') in self.zboard.piece_by_sq('e1').expand(self.zboard.board))
     
-    def test_2pieces_1spot_n_moving_air(self):
+    def test_move_exceptions(self):
         self.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wq', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': 'bn', 'c8': 'bb', 'c3': 'bn', 'c2': '  ', 'c1': 'wb', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wb', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': 'wn', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         #print(self.zboard.piece_by_sq('c3'))
         #self.zboard.relocate('c8','c3')
@@ -206,7 +206,7 @@ class boardTest(unittest.TestCase):
         self.assertFalse(('m', 'c7', 'Kc7')in self.zboard.valids(self.zboard.piece_by_sq('d8')))
         
     
-    def test_validate_against_checks(self):
+    def test_prevalidate_against_checks(self):
         #note:since we dont have the the game class, we will use the _piecefy_ to reset the board back after executing every expansion for evaluation
         self.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': 'bq', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wq', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': 'bn', 'c8': 'bb', 'c3': 'bn', 'c2': '  ', 'c1': 'wb', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': 'wb', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': 'bb', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': 'wn', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         #print('\n'+self.zboard.show())
@@ -240,9 +240,9 @@ class boardTest(unittest.TestCase):
                 #    v = self.zboard.validate_move(p,e,1)
                 #else:
                 if p.type == 'k':
-                    v = self.zboard.old_validate_all_moves(p,e)
+                    v = self.zboard.prevalidate_all_moves(p,e)
                 else:
-                    v = self.zboard.old_validate_move(p,e)
+                    v = self.zboard.prevalidate_move(p,e)
                     
                 if not v:
                     reductions.append(e)
@@ -296,18 +296,6 @@ class boardTest(unittest.TestCase):
 
     
     def test_decode_move(self):
-        #def __init__(self,wplayer='human',bplayer='human',clock=60*60):
-        #too simple --- def turnset(self): 
-        #not significant for performance --- def show(self):
-        #interactive --- def prompt_human_move(self):
-        #not ready --- def AI_move(self,depth=5,verbose=0):
-        #requires special history setup --- def verified(self,piece):
-        #requires special setup --- def mate(self):
-        #not ready --- def stalemate(self):
-        # ** takes setup since based on the pieces set ! --- def decode_move(self, move_notation, piece_set):
-        #    return (filtered[0],(move_type,destination,move))
-        #interactive --- def cycle(self):
-        # * next test - create test mode for cycle, that replaces the prompt_human_move func
         zgame = chesslib.game()
         zgame.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': '  ', 'h1': 'wr', 'h6': '  ', 'h7': '  ', 'h4': '  ', 'h5': '  ', 'd8': '  ', 'a8': 'br', 'd6': '  ', 'd7': 'bb', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': '  ', 'g7': '  ', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': '  ', 'g2': '  ', 'g1': '  ', 'g8': '  ', 'c8': '  ', 'c3': 'bn', 'c2': '  ', 'c1': '  ', 'c7': '  ', 'c6': '  ', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': '  ', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': '  ', 'f8': '  ', 'b4': '  ', 'b5': 'wb', 'b6': '  ', 'b7': 'wr', 'b1': '  ', 'b2': '  ', 'b3': '  ', 'b8': '  ', 'a1': 'wr', 'a3': '  ', 'a2': '  ', 'a5': '  ', 'e8': 'bk', 'a7': '  ', 'a6': '  ', 'e5': 'bq', 'e4': 'wn', 'e7': '  ', 'e6': '  ', 'e1': 'wk', 'e3': '  ', 'e2': '  ', 'a4': '  '})
         #print('\n'+zgame.zboard.show())
@@ -388,19 +376,21 @@ class boardTest(unittest.TestCase):
 |wr|  |  |  |wk|  |  |  |
 """,zgame.zboard.show()) #before 'Rxa2' #by black
 
-    def test_game_ai_vs_ai(self):
-        print
-        some_game = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
-        #some_game.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'wp', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
-        zgame = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
-        zgame.zboard = copy.deepcopy(some_game.zboard)
-        zgame.cycle(aidepth=3,verbose=1)
-        #print zgame.full_notation
-        
     def test_game_cycle_ai(self):
         zgame = chesslib.game(bplayer='ai',logfile='d:\\temp\\aigametest.txt') # using log different from the defailt, so that it doesn't get overwrittent by subsequent test
         #cProfile.run('zgame.cycle(aidepth=4)')
-        #zgame.cycle(aidepth=4)
+        #zgame.cycle(aidepth=2)
+
+    def test_ai_vs_ai(self):
+        #print
+        some_game = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
+        some_game.zboard.piecefy({'h8': '  ', 'h2': '  ', 'h3': 'wp', 'h1': 'wr', 'h6': '  ', 'h7': 'bp', 'h4': '  ', 'h5': '  ', 'd8': 'bk', 'a8': 'br', 'd6': 'bp', 'd7': '  ', 'd4': '  ', 'd5': '  ', 'd2': '  ', 'd3': '  ', 'd1': 'wr', 'g7': 'bq', 'g6': '  ', 'g5': '  ', 'g4': '  ', 'g3': 'wp', 'g2': 'wp', 'g1': '  ', 'g8': '  ', 'c8': 'bb', 'c3': 'wn', 'c2': 'wp', 'c1': 'wk', 'c7': '  ', 'c6': 'bp', 'c5': '  ', 'c4': '  ', 'f1': '  ', 'f2': '  ', 'f3': 'wq', 'f4': '  ', 'f5': '  ', 'f6': '  ', 'f7': 'wb', 'f8': '  ', 'b4': '  ', 'b5': '  ', 'b6': '  ', 'b7': 'bp', 'b1': '  ', 'b2': 'wp', 'b3': '  ', 'b8': 'bn', 'a1': '  ', 'a3': '  ', 'a2': 'wp', 'a5': '  ', 'e8': '  ', 'a7': 'bp', 'a6': '  ', 'e5': 'wp', 'e4': '  ', 'e7': 'bp', 'e6': '  ', 'e1': '  ', 'e3': '  ', 'e2': '  ', 'a4': '  '})
+        zgame = chesslib.game(wplayer='ai',bplayer='ai',logfile='d:\\temp\\aiaigametest.txt')
+        zgame.zboard = copy.deepcopy(some_game.zboard)
+        zgame.cycle(aidepth=2,verbose=0)
+        #print zgame.full_notation
+        
+
                 
 if __name__ == "__main__":
     try: unittest.main()

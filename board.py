@@ -309,7 +309,8 @@ class board():
 
         return actions,undo
         
-    def do_actions(self,actions,verbose=0):
+    def process_actions(self,actions,verbose=0):
+        # common routine of the exec_move and undo_move
         for a in actions:
             if a[0]=='reloc':
                 self.relocate(a[1],a[2])
@@ -324,10 +325,10 @@ class board():
                 self.binch = a[4]
 
     def undo_move(self,actions,verbose=0):
-        self.do_actions(actions,verbose)
-        self.backtrack.pop() # this is used to check on stalemate by repetition
+        self.process_actions(actions,verbose)
+        self.backtrack.pop() # backtrack is used to check for stalemate by repetition
 
-    def exec_move(self,piece,exp,verbose=0):#,virtual=False):
+    def exec_move(self,piece,exp,verbose=0):
         # the function that applies actions to the piece set (and thus the board)
         if verbose>0:
             print 'piece',piece
@@ -336,7 +337,7 @@ class board():
         origin_sq=piece.sq
         if verbose>0:
             print 'actions',actions
-        self.do_actions(actions,verbose)
+        self.process_actions(actions,verbose)
 
         #invalidation
         if piece.type == 'k' or self.winch or self.binch: #this are the old values of winch & binch
@@ -347,7 +348,7 @@ class board():
         if verbose>0:
             print 'is_valid',is_valid
         if not is_valid:
-            self.do_actions(undo,verbose)
+            self.process_actions(undo,verbose)
             return None
         # --- end of invalidation ---
 
@@ -364,9 +365,8 @@ class board():
         
         return undo
 
-    def virt_move(self,piece,exp,verbose=0):#,virtual=False):
+    def virt_move(self,piece,exp,verbose=0):
         # the function returns board state with applied given expansion EXP to the board
-        
         if verbose>0:
             print(']]]',piece,exp)
         new_state=self.board.copy()
@@ -475,7 +475,7 @@ class board():
 
     #===============================================================================================================
 
-    def old_validate_move(self,piece,move,verbose=0):
+    def prevalidate_move(self,piece,move,verbose=0):
         # only validates against position, cannot reject moves based on history conditions
         state_tobe_checked,wksq,bksq = self.virt_move(piece,move,verbose)
         if piece.col == 'w':
@@ -494,7 +494,7 @@ class board():
 
         return not is_in_check # False == invalid move
 
-    def old_validate_all_moves(self,piece,move,verbose=0):
+    def prevalidate_all_moves(self,piece,move,verbose=0):
         # only validates against position, cannot reject moves based on history conditions
         state_tobe_checked,wksq,bksq = self.virt_move(piece,move,verbose)
         if piece.col == 'w':
@@ -648,11 +648,11 @@ class board():
         # return list of hist independant valid moves for given piece
         expansions = piece.expand(self.board) # these are from the dict + basic check of move rules
         if piece.type == 'k' or self.winch or self.binch:
-            val_func = self.old_validate_all_moves
+            val_func = self.prevalidate_all_moves
             if verbose>0:
                 print 'func',val_func
         else:
-            val_func = self.old_validate_move
+            val_func = self.prevalidate_move
         
         if verbose>0:
             print(self.show())
