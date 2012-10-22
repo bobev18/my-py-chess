@@ -1,27 +1,9 @@
 # -*- coding: utf-8 -*-
 import re, sys, time
 
-#global max_eval_memory_size
-#max_eval_memory_size = 150000
 global capture_sign
 capture_sign = 'x'
-"""
-global pvalues
-pvalues = {'p':1.0,'r':5.0,'n':3.0,'b':3.0,'q':10.0,'k':0.0,' ':0.0}
-global sqvalues
-sqvalues = { 'a8':0.01, 'b8':0.01, 'c8':0.01, 'd8':0.01, 'e8':0.01, 'f8':0.01, 'g8':0.01, 'h8':0.01,
-             'a7':0.01, 'b7':0.02, 'c7':0.02, 'd7':0.02, 'e7':0.02, 'f7':0.02, 'g7':0.02, 'h7':0.01,
-             'a6':0.01, 'b6':0.02, 'c6':0.03, 'd6':0.03, 'e6':0.03, 'f6':0.03, 'g6':0.02, 'h6':0.01,
-             'a5':0.01, 'b5':0.02, 'c5':0.03, 'd5':0.04, 'e5':0.04, 'f5':0.03, 'g5':0.02, 'h5':0.01,
-             'a4':0.01, 'b4':0.02, 'c4':0.03, 'd4':0.04, 'e4':0.04, 'f4':0.03, 'g4':0.02, 'h4':0.01,
-             'a3':0.01, 'b3':0.02, 'c3':0.03, 'd3':0.03, 'e3':0.03, 'f3':0.03, 'g3':0.02, 'h3':0.01,
-             'a2':0.01, 'b2':0.02, 'c2':0.02, 'd2':0.02, 'e2':0.02, 'f2':0.02, 'g2':0.02, 'h2':0.01,
-             'a1':0.01, 'b1':0.01, 'c1':0.01, 'd1':0.01, 'e1':0.01, 'f1':0.01, 'g1':0.01, 'h1':0.01,}
-"""
-#global evaluated
-#evaluated = {}
 
-#const
 plainboardinit = {'a8':'br', 'b8':'bn', 'c8':'bb', 'd8':'bq', 'e8':'bk', 'f8':'bb', 'g8':'bn', 'h8':'br',
                  'a7':'bp', 'b7':'bp', 'c7':'bp', 'd7':'bp', 'e7':'bp', 'f7':'bp', 'g7':'bp', 'h7':'bp',
                  'a6':'  ', 'b6':'  ', 'c6':'  ', 'd6':'  ', 'e6':'  ', 'f6':'  ', 'g6':'  ', 'h6':'  ',
@@ -31,23 +13,6 @@ plainboardinit = {'a8':'br', 'b8':'bn', 'c8':'bb', 'd8':'bq', 'e8':'bk', 'f8':'b
                  'a2':'wp', 'b2':'wp', 'c2':'wp', 'd2':'wp', 'e2':'wp', 'f2':'wp', 'g2':'wp', 'h2':'wp',
                  'a1':'wr', 'b1':'wn', 'c1':'wb', 'd1':'wq', 'e1':'wk', 'f1':'wb', 'g1':'wn', 'h1':'wr',}
 
-"""
-def sq2pos(sq):
-    x = ord(sq[0])-96
-    y = int(sq[1:])
-    return x,y
-
-def pos2sq(x,y):
-    if x<1 or x>8 or y<1 or y>8: return 'n/a'
-    return chr(96+x)+str(y)
-
-def p2s(xy):
-    x,y=xy
-    if x<1 or x>8 or y<1 or y>8: return 'n/a'
-    return chr(96+x)+str(y)
-
-"""
-#from piece import piece
 from board import board
 from board import MoveException
 from ai import AI
@@ -64,10 +29,6 @@ class game():
         self.full_notation = '' # quite as the values in hist, but with the count and # + ? !
         with open(logfile,'w') as f:
             self.logfile = logfile #sys.stdout
-         
-        #self.log = open(logfile,'w')
-        #initiate the game cycle
-        #self.cycle()
     
     def logit(self,*args):
         data=' '.join([str(x) for x in args])
@@ -95,172 +56,61 @@ class game():
         mv = None
         while mv==None:
             inp = raw_input('enter your move: ')
-            if inp[0] != '?':
+            if len(inp)>0 and inp[0] != '?':
                 try:
                     mv = self.decode_move(inp,self.turnset())
                 except MoveException as err:
-                    print('erroneous move',err.args)
+                    print 'erroneous move',err.args
+                    print 'enter "?" to view commands'
+            elif inp[0] == '?':
+                if inp == '?' or inp == '?help':
+                    print 'commands:\n?hist - show game notation\n?export - print position as dict\n?verbose - tongle verbose on and off\n?undo - revert full turn\n?exit - exit the game'
+                    print 'advanced: ?eval(...) ; ?preval(...) - the second executes in the game cycle(for better scope)'
+                    inp = None
+                elif inp.count('?eval')>0:
+                    print eval(inp[6:-1])
+                    inp = None
+                elif inp.count('?preval')>0:
+                    mv = inp[3:]
+                else:
+                    mv = inp[1:]
             else:
-                mv = inp[1:]
-        return mv #returns move or command
-
-    def AI_move(self,init_borad_state,lastmove,depth=5,verbose=0):
-        self.logit('/n/n',5*'-','CALL AI_move','-'*5)
-        self.logit('depth:',depth,'init_borad_state',init_borad_state,'lastmove',lastmove)
-        lm_move_triplet=(lastmove[2],lastmove[3],lastmove[4])
-        action = {'origin':lastmove[1],'move':lm_move_triplet,'path':[]}
-        #print 'action',action,'init_borad_state',init_borad_state
-        #rrr = self.ai.AIrecursion(init_borad_state,self.turn['col'],self.turn['col'],depth,depth,-999,999,action)
-
-        #commented out on 18.Oct.2012 3am
-        #rrr = self.ai.Value(init_borad_state,self.turn['col'],depth,depth,-999,999,action)
-        ai_board = board(init_borad_state)
-        rrr = self.ai.Value(ai_board,self.turn['col'],depth,depth,-999,999,action)
-        ### DANGER - we pass separate board object, but retain the undo_stack of the current game!?
-
-        if verbose>0:
-            print '\n'.join([str(x)+':'+str(rrr[x]) for x in rrr])
-            print '-'*10
-        ######
-        ## getting all the moves is needed in order to validate the history related moves (self.verified uses self.black['hist'])
-        ## TODO: pass parameter in to keep track of that validation (self.verified) ((could be func))
-        #print rr #
-        """[-0.29999999999999999, 19, 18, 0, ('m', 'h5', 'h5'), ('t', 'b5', 'Bxb5'), ('m', 'b5', 'b5')]
-        [-0.26000000000000001, 30, 19, 0, ('m', 'h5', 'h5'), ('t', 'f5', 'exf5'), ('m', 'f5', 'f5')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h5', 'h5')]
-        [0.68000000000000005, 30, 19, 0, ('m', 'h7', 'Rh7'), ('m', 'd4', 'd4'), ('m', 'h6', 'h6')]
-        [0.68000000000000005, 31, 27, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'd5', 'd5')]
-        [0.68000000000000005, 30, 27, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'd6', 'd6')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'g5', 'g5')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'g6', 'g6')]
-        [0.68000000000000005, 30, 20, 0, ('m', 'g8', 'Rg8'), ('m', 'd4', 'd4'), ('m', 'h6', 'Nh6')]
-        [0.68000000000000005, 30, 22, 0, ('m', 'g8', 'Rg8'), ('m', 'f3', 'Qf3'), ('m', 'f6', 'Nf6')]
-        [0.68000000000000005, 30, 22, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c5', 'c5')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c6', 'c6')]
-        [0.68000000000000005, 30, 19, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'b6', 'b6')]
-        [0.68000000000000005, 30, 22, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'c6', 'Nc6')]
-        [0.68000000000000005, 30, 20, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a6', 'Na6')]
-        [0.68000000000000005, 30, 21, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a5', 'a5')]
-        [0.68000000000000005, 30, 19, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'a6', 'a6')]
-        [0.68000000000000005, 29, 29, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e5', 'e5')]
-        [0.68000000000000005, 30, 30, 0, ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'e6', 'e6')]
-        """
-        """
-        zmax=min(rrr,key=lambda z: z[0])
-        tmp = [x for x in rrr if x[0]==zmax[0]] # if there are many results with the same value ...
-        if len(tmp)>1:
-            rrr = sorted(tmp,key=lambda _t: _t[1],reverse=True) # ... choose the one that leaves the least options for the opponent
-        print '\n'.join([str(x) for x in rrr])
-        print '-'*10
-        while rrr:
-            rr = rrr.pop()
-            for p in self.turnset():
-                # the initial moves are the end of the queue
-                movepath = [x for x in rr[1:] if isinstance(x,tuple)]
-                zmove= movepath[-1]
-                #print self.verified(p)
-                if zmove in self.verified(p):
-                    print movepath
-                    print 'piece',p,'    zmove',zmove
-                    return [p,zmove]
-        """
-        return rrr['move']
-        return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
-        """
-        #set separate log file for each AI move, beacuse otherwise the log gets 0.5GB big
-        templog = self.logfile
-        alpha=-999
-        beta=999
-        pieces_set = self.turnset()[:]
-        pruning = False
-        while not pruning and len(pieces_set)>0 :
-            p = pieces_set.pop(0)
-            local_rez = []
-            possible_moves = self.verified(p)
-            if len(possible_moves)>0:
-                mv_fname = self.logfile[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt'
-                with open(mv_fname,'w') as f: # this will also close the turn specific log file 
-                    pass # this is just to overwritre the previous log.
-                while not pruning and len(possible_moves)>0:
-                    e=possible_moves.pop(0)
-                    self.log = mv_fname #switch log
-                    rr = self.AIrecursion(self.zboard.board,self.turn['col'],opposite,depth,alpha,beta,{'origin':p.sq,'move':e,'path':[]})
-                    rr.append(e)
-                    local_rez.append(rr)
-                    #pruning
-                    if rr[0]>beta:
-                        pruning = True
-                        #print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set,file=self.log)
-                        f.write('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                        if verbose>0:
-                            print('pruned r[0]>beta',rr[0],'>',beta,'| skipping:',possible_moves,'+',pieces_set)
-                    if rr[0]>alpha:
-                        alpha=rr[0]
-
-            self.log = templog # return to the main log file
-            if verbose>0:
-                print('p:',p,'     -> ',local_rez)
-            #print('p:',p,'     -> ',local_rez,file=self.log)
-            self.logit('p:',p,'     -> ',local_rez)
-
-            if len(local_rez)>0:
-                rez[p]=max(local_rez,key=lambda _t: _t[0])
-
-        maxrezkey = max(rez,key=lambda _t: rez[_t][0])
-        if verbose>0:
-            #print('rez:',rez)
-            print('decided:',(maxrezkey,rez[maxrezkey]))
-        #print('decided:',(maxrezkey,rez[maxrezkey]),file=self.log)
-        self.logit('decided:',(maxrezkey,rez[maxrezkey]))
-        return (maxrezkey,rez[maxrezkey])
-        """
+                pass
         
+        return mv #returns move or command
             
     def verified(self,piece,verbose=0):
         #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
         self.logit('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece)
         expansions = self.zboard.valids(piece,verbose)
         #print('expansions',expansions,file=self.log)
-        self.logit('expansions',expansions)
-        reductions = []
-        # check for hist dependant moves
-        if 'c' in [ z[0] for z in expansions]: #verify for O-O
-            #print 'exp',expansions
-            #print 'debug hist', self.white['hist'], self.black['hist']
-            if piece.col=='w':
-                if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Ke1','Kxe1'] ]): #king moved
-                    reductions.append([ z for z in expansions if z[2].count('O-O')>0 ][0] )
-                else:
-                    if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Rh1','Rxh1'] ]): #king's rook moved
-                        reductions.append([ z for z in expansions if z[2].count('O')==2 ][0] )
-                    if any([ mov in [ z for z in self.white['hist'] ] for mov in ['Ra1','Rxa1'] ]): #queen's rook moved
-                        reductions.append([ z for z in expansions if z[2].count('O')==3 ][0] )
-            else:
-                if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Ke8','Kxe8'] ]): #king moved
-                    reductions.append([ z for z in expansions if z[2].count('O-O')>0 ][0] )
-                else:
-                    if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Rh8','Rxh8'] ]): #king's rook moved
-                        reductions.append([ z for z in expansions if z[2].count('O')==2 ][0] )
-                    if any([ mov in [ z for z in self.black['hist'] ] for mov in ['Ra8','Rxa8'] ]): #queen's rook moved
-                        reductions.append([ z for z in expansions if z[2].count('O')==3 ][0] )
-        if 'e' in [ z[0] for z in expansions]: # verify for en passan
-            for e in [ z for z in expansions if z[0]=='e' ]:
-                if piece.col=='w':
-                    if self.black['hist'][-1][2]!=e[1][0]+'5' or e[1][0]+'6' in [ z[2] for z in self.black['hist'] ]:
-                        #e[1][0] = the file for the destination sq in the e.p. move
-                        # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
-                        reductions.append(e)
-                else:
-                    if self.white['hist'][-1][2]!=e[1][0]+'4' or e[1][0]+'3' in [ z[2] for z in self.white['hist'] ]:
-                        #e[1][0] = the file for the destination sq in the e.p. move
-                        # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
-                        reductions.append(e)
+        self.logit('expansions:',expansions)
+        reduced = []
+        if piece.col == 'w':
+            castle_row = '1'
+            hist = self.white['hist']
+        else:
+            castle_row = '8'
+            hist = self.black['hist']
 
-        self.logit('reductions:',reductions)
-        #if piece.sq=='e8' and piece.type=='k':
-        #    print 'exp',expansions,'red', reductions
-        reduced = [ z for z in expansions if z not in reductions ]
+        for expansion in expansions:
+            reduced.append(expansion)
+            if expansion[2]=='O-O' and ('Ke'+castle_row in hist or 'Kxe'+castle_row in hist or 'Rh'+castle_row in hist or 'Rxh'+castle_row in hist): #king's rook moved
+                    reduced.pop()
+            if expansion[2]=='O-O-O' and ('Ke'+castle_row in hist or 'Kxe'+castle_row in hist or 'Ra'+castle_row in hist or 'Rxa'+castle_row in hist): #queen's rook moved
+                    reduced.pop()
+                   
+            if expansion[0]=='e': # verify for en passan
+                if piece.col=='w':
+                    if self.black['hist'][-1].count(expansion[1][0]+'5')==0 or expansion[1][0]+'6' in self.black['hist']:
+                        #e[1][0] = the file for the destination sq in the e.p. move
+                        # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
+                        reduced.pop()
+                else:
+                    if self.white['hist'][-1].count(expansion[1][0]+'5')==0 or expansion[1][0]+'6' in self.white['hist']:
+                        reduced.pop()
+
+        self.logit('reduced:',reduced)
 
         # add disambiguations based on other pieces of the same type being able to get to the same spot
         if piece.col == 'w':
@@ -292,7 +142,6 @@ class game():
         return reduced
 
     def mate(self, verbose=0):
-
         # draw - no one could possibly mate
         if len(self.zboard.whites)+len(self.zboard.blacks)==2:
             return 'stalemate'
@@ -309,8 +158,7 @@ class game():
             print 'mate rez (all avail moves for the pl in turn):', rez
         if verbose>0:
             print 'len avail moves:', len(rez)
-            
-
+        
         if len(rez)==0:
             if verbose>0:
                 print 'player on turn is ',self.turn['col'],' and check against him is :',self.turn['is_in_check']
@@ -320,7 +168,6 @@ class game():
                 return 'stalemate'
         else:
             # repeated moves
-            #if len(self.zboard.backtrack)>=6 and self.zboard.backtrack[-1]==self.zboard.backtrack[-3] and self.zboard.backtrack[-1]==self.zboard.backtrack[-5] and self.zboard.backtrack[-2]==self.zboard.backtrack[-4] and self.zboard.backtrack[-2]==self.zboard.backtrack[-6]:
             if len(self.zboard.backtrack)>0 and self.zboard.backtrack.count(self.zboard.backtrack[-1])>=3:
                 if verbose>0:
                     print 'backtrack',self.zboard.backtrack
@@ -331,8 +178,8 @@ class game():
     def decode_move(self, move_notation, piece_set,verbose=0):
         # format of the return is tuple of 5 elements: (piece, source_qs,move_type,destination_sq,notation)
         # first element is of class piece, and the rest are str
-        if move_notation=='exit':
-            return 'exit'
+        if move_notation=='exit' or move_notation.count('eval(')>0 or move_notation.count('undo')>0:
+            return move_notation
         if verbose >1:
             print 'move_notation', move_notation
         verbose = 1
@@ -489,45 +336,70 @@ class game():
         if verbose >0:  self.logit('result:',(filtered[0],(move_type,destination,move)))
         return (filtered[0],filtered[0].sq,move_type,destination,move)
 
-    def undo(self, verbose=0):
+    def turnundo(self, verbose=0):
+        #undoes whole turn i.e. it's white to move, they make undo, which reverses both black's last move, and whites last move
+        #once
         if verbose>0:
             print 'self.undo_stack',self.undo_stack
         last = self.undo_stack.pop()
         if verbose>0: 
             print last
         self.zboard.undo_move(last)
+        self.turn['hist'].pop()  #  erase move from hist
+        #twice
+        if verbose>0:
+            print 'self.undo_stack',self.undo_stack
+        last = self.undo_stack.pop()
+        if verbose>0: 
+            print last
+        self.zboard.undo_move(last)
+        self.turn['hist'].pop()  #  erase move from hist
+
+        #self.zboard.ak below are handled by the 'data' record on the board.undo, so they will be valid
+        if self.turn['col'] == 'w':
+            self.turn['is_in_check'] = self.zboard.sq_in_check(self.zboard.wk,'b',verbose=0)
+        else:
+            self.turn['is_in_check'] = self.zboard.sq_in_check(self.zboard.bk,'w',verbose=0)
+
+        self.turn_count -=1 # regardless of current color, we are reversing entire turn, so no conditions...
 
     def cycle(self,testing=[],aidepth=4,verbose=1): # verbose=1 - we want to see the board by default, and occasionaly turn it off...
         old_board_state = ''
         validated_move = None
-        #pieces_count = 32
-        #previous_move = None
-        if testing != []:
-            testing.append('exit')
-            human_function = lambda : self.decode_move(testing.pop(0),self.turnset(),verbose=0)
-        else:
-            human_function = self.prompt_human_move
         mate = self.mate()
         eksit = False
         while not eksit and mate=='':
             if verbose>0:
                 print self.show()
+                print 'turn:',self.turn_count
             
             if self.turn['player']=='human':
                 #take_time_stamp
                 validated_move = None
                 while validated_move == None:
-                    mv = human_function()
+                    if testing != []:
+                        mv = self.decode_move(testing.pop(0),self.turnset(),verbose=0)
+                    else:
+                        mv = self.prompt_human_move()
+
                     if mv == 'exit':
                         eksit = True
                         validated_move = 'exit'
                     elif mv == '':
                         validated_move = ''
                     elif mv == 'hist':
-                        print(self.full_notation)
+                        print '\n'.join([ str(i+1)+'. '+self.white['hist'][i]+' '+self.black['hist'][i] for i in range(len(self.black['hist']))]), \
+                              ('\n'+str(len(self.white['hist']))+'. '+self.white['hist'][-1])*(len(self.black['hist'])<len(self.white['hist']))
                         validated_move = ''
                     elif mv == 'export':
-                        print(self.zboard.board)
+                        print self.zboard.board
+                        validated_move = ''
+                    elif mv == 'undo':
+                        self.turnundo(verbose)
+                        validated_move = ''
+                    elif mv.count('eval')>0:
+                        print 'mv',mv,'mv command', mv[5:-1]
+                        eval(mv[5:-1])
                         validated_move = ''
                     elif mv == 'verbose':
                         if verbose == 0:
@@ -536,8 +408,8 @@ class game():
                             verbose=0
                         validated_move = ''
                     else:
-                        verified_moves = self.verified(mv[0])
-                        if (mv[2],mv[3],mv[4]) in verified_moves:
+                        verified_moves = self.verified(mv[0]) #mv[0] is the piece
+                        if (mv[2],mv[3]) in [(z[0],z[1]) for z in verified_moves]: # move type, destination sq, notation 
                             validated_move = mv
                             #previous_move = mv
                         else:
@@ -551,27 +423,17 @@ class game():
                 if verbose>0:
                     print 'AI ('+self.turn['col']+') starts at time:',time.strftime("%Y/%m/%d %H:%M:%S", time.localtime())
 
+                #### the cheat below is to pick up AI vs AI test game from the middle
                 if validated_move==None:
                     validated_move=(self.zboard.piece_by_sq('g8'), '', 'm', 'g8', 'Ng8') #(wp@e4, 'e2', 'm', 'e4', 'e4')
                     old_board_state = self.zboard.board.copy()
-                    
+                ####  ===============================================================
+
                 #print 'validated_move format',validated_move
                 
-                vm = self.AI_move(old_board_state,validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
-                #vm = self.AI_move(self.zboard.board.copy(),validated_move,aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
-                # note: validated_move was previous_move, but since it has the same value...
-                
-                #previous_move = vm[1]
-                #returns (bp@f7, [0.64000000000000001, 30, 19, 38, 0, ('m', 'f3', 'Qf3'), ('m', 'h5', 'h5'), ('m', 'd4', 'd4'), ('m', 'f6', 'f6')]))
+                vm = self.ai.AI_move(old_board_state,validated_move,self.turn['col'],self.white['hist'],self.black['hist'],aidepth,verbose) #turn_color,verbose ### used to be depth,verbose
                 run_time = time.clock() - start_stamp
-                #validated_move = (vm[0],'',vm[1][0],vm[1][1],vm[1][2]) #?? how shall we trully validate ??
-                # validated_move[0] is the piece object
-                # validated_move[1] has the evaluation, and sequence of moves. the last in the list [-1] is the fisrt of the sequence
-
                 validated_move = (self.zboard.piece_by_sq(vm['origin']),vm['origin'],vm['move'][0],vm['move'][1],vm['move'][2])
-                ## ~~ self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4]))
-                # def exec_move(self,piece,exp,verbose=0):#,virtual=False):
-                
                 if verbose >0:
                     print('AI:',vm,' completed in:',run_time)
                 self.logit('AI:',vm)
@@ -580,78 +442,57 @@ class game():
                 #turn_time = now - stamp
 
                 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                old_board_state = self.zboard.board.copy()
+                old_board_state = self.zboard.board.copy() # used to create ai_board
                 
                 #execute move
-                if verbose >0: print validated_move
+                if verbose >0:
+                    print validated_move
                 self.undo_stack.append(self.zboard.exec_move(validated_move[0],(validated_move[2],validated_move[3],validated_move[4])))
                 if verbose>1:
                     print 'self.zboard.winch & binch:',self.zboard.winch,self.zboard.binch
                     print 'self.turn["col"] ',self.turn['col'] 
 
-                #print self.show()
-
                 #memory reuse
                 if validated_move[2] == 't':
                     self.ai.clean_records(64 - self.zboard.board.values().count('  '))
 
-                #add history record
-                self.turn['hist'].append(validated_move[4])  #  add move to hist
-                #self.turn['time'] -= turn_time #  remaining time = remaining time - turn time
-
-                #add move to full notation
+                #switch turn & and check if the new player is in check
                 if self.turn['col'] == 'w':
-                    #opposite_col = self.zboard.blacks
-                    kp = self.zboard.bk
-                else:
-                    #opposite_col = self.zboard.whites
-                    kp = self.zboard.wk
-
-                
-                #kp = [ z for z in opposite_col if z.type=='k' ][0]
-                
-                check = self.zboard.sq_in_check(kp,self.turn['col'],verbose=0)
-                #print 'cycle in_check check',check
-
-
-                #:run breaks on the line below because formatting returned by the AI differes from the one returned by the decode_move !!!
-                add_notation = validated_move[4]
-                
-                if check:
-                    add_notation += '+'
-                    
-                #switch turn & complete the move notation (disambiguation notation should be in the AI move section)
-                if self.turn['col'] == 'w':
-                    self.turn = self.black
-                    self.full_notation += str(self.turn_count)+'. '+add_notation+' ' #move separator
                     self.turn_count +=1
+                    self.turn = self.black
+                    self.turn['is_in_check'] = self.zboard.sq_in_check(self.zboard.bk,'w',verbose=0)
+                    self.white['hist'].append(validated_move[4]+'+'*self.turn['is_in_check'])
                 else:
                     self.turn = self.white
-                    self.full_notation += add_notation+'\n'
-
-                #calculating the 'in_check' value
-                self.turn['is_in_check'] = check
+                    self.turn['is_in_check'] = self.zboard.sq_in_check(self.zboard.wk,'b',verbose=0)
+                    self.black['hist'].append(validated_move[4]+'+'*self.turn['is_in_check'])
+               
                 #check if mate or stalemate
                 mate = self.mate(verbose=0)
                 if verbose>1:
                     print 'self.zboard.winch & binch:',self.zboard.winch,self.zboard.binch
-                    print 'self.turn["col"] ',self.turn['col'] 
+                    print self.white['hist']+'\n'+self.black['hist']
                     print 'self.turn["is_in_check"] ',self.turn['is_in_check'] 
                     print 'mate detected as',mate
         
-        # --------- end of while
+        # --------- end of while not eksit and mate=='':
         if verbose>0:
-            print(self.full_notation)
-        if mate == 'stalemate':
-            self.full_notation = self.full_notation[:-2]+'\n1/2-1/2'
-            return '1/2-1/2'
-        if mate == 'mate':
-            self.full_notation = self.full_notation[:-2]+'#\n'
-            if self.turn['col']=='w':
-                self.full_notation+='0-1'
-                return '0-1'
-            else:
-                self.full_notation+='1-0'
-                return '1-0'
+            print self.show()
+            self.full_notation = '\n'.join([ str(i+1)+'. '+self.white['hist'][i]+' '+self.black['hist'][i] for i in range(len(self.black['hist']))])+ \
+                                 ('\n'+str(len(self.white['hist']))+'. '+self.white['hist'][-1])*(len(self.black['hist'])<len(self.white['hist']))
 
-        return 'exit'
+        result = 'exit'
+        if mate == 'stalemate':
+            self.full_notation += '\n1/2-1/2'
+            result = '1/2-1/2'
+        if mate == 'mate':
+            if self.turn['col']=='w':
+                result = '0-1'
+            else:
+                result = '1-0'
+            self.full_notation = self.full_notation[:-1]+'#\n'+result
+
+        if verbose>0:
+            print self.full_notation
+        
+        return result

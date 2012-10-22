@@ -34,6 +34,7 @@ class AI():
         self.max_eval_memory_size = 1000000
         self.capture_sign = 'x'
         self.undo_stack = []
+        self.game_hist = {'w':[],'b':[]}
 
         
         self.logfile=logfile#[:-4]+'_'+str(self.turn_count)+'_'+str(p)+'.txt
@@ -64,6 +65,24 @@ class AI():
         #print hashstate,'     rezval',val
         val = round(val,3)
         return val
+
+    def AI_move(self,init_borad_state,lastmove,turn_col,w_game_hist,b_game_hist,depth=5,verbose=0):
+        self.logit('/n/n',5*'-','CALL AI_move','-'*5)
+        self.logit('depth:',depth,'init_borad_state',init_borad_state,'lastmove',lastmove)
+
+        self.game_hist['w']=w_game_hist
+        self.game_hist['b']=b_game_hist
+        
+        lm_move_triplet=(lastmove[2],lastmove[3],lastmove[4])
+        action = {'origin':lastmove[1],'move':lm_move_triplet,'path':[]}
+        ai_board = board(init_borad_state)
+        rrr = self.Value(ai_board,turn_col,depth,depth,-999,999,action)
+        if verbose>0:
+            print rrr
+            print '\n'.join([str(x)+':'+str(rrr[x]) for x in rrr])
+            print '-'*10
+        return rrr['move']
+        return "ERROR - no of the suggested moves is valid; unles mate - it's an error"
     
     def AIeval(self,board_state,hashstate):
         #hashstate = board.hashit(board_state) #''.join([ board_state[z] for z in ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'd1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'g1', 'g2', 'g3', 'g4', 'g5', 'g6', 'g7', 'g8', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8'] ])
@@ -131,8 +150,47 @@ class AI():
         return [score,best_action]
     """
 
+    def verified(self,tcol,action,verbose=0):
+        #print('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece,file=self.log)
+        #self.logit('/n/n',5*'-','CALL verified','-'*5,'n\piece=',piece)
+        # check for hist dependant moves
+        whiset = self.game_hist['w'] + action['path']
+        bhiset = self.game_hist['b'] + action['path']
+        
+        if action['move'][0] == 'c': #verify for O-O
+            #print 'exp',expansions
+            #print 'debug hist', self.white['hist'], self.black['hist']
+            if tcol=='w':
+                if 'Ke1' in whiset or 'Kxe1' in whiset:
+                    return False #king moved
+                if action['move'][2] == 'O-O':
+                    if 'Rh1' in whiset or 'Rxh1' in whiset:
+                        return False #h rook moved
+                else: #O-O-O
+                    if 'Ra1' in whiset or 'Rxa1' in whiset:
+                        return False #a rook moved
+            else:
+                if 'Ke8' in bhiset or 'Kxe8' in bhiset:
+                    return False #king moved
+                if action['move'][2] == 'O-O':
+                    if 'Rh8' in bhiset or 'Rxh8' in bhiset:
+                        return False #h rook moved
+                else: #O-O-O
+                    if 'Ra8' in bhiset or 'Rxa8' in bhiset:
+                        return False #a rook moved
 
+        if action['move'][0]=='e': # verify for en passan
+            if tcol=='w':
+                if bhiset[-1]!=action['move'][1][0]+'5' or action['move'][1][0]+'6' in bhiset:
+                    return False
+                    #action['move'][1][0] = the file for the destination sq in the e.p. move
+                    # to reduce the e.p move, we want last move to be different from 'f5', or for hist to has move 'f6'
 
+            else:
+                if whiset[-1]!=action['move'][1][0]+'4' or action['move'][1][0]+'3' in whiset:
+                    return False
+
+        return True
 
     def maxValue(self,ai_board,tcol,depth,original_depth,alpha,beta,expansions, path):
         if tcol=='w':
@@ -151,15 +209,26 @@ class AI():
                 new_action['path']=path+[e[2]]
                 
                 result = self.Value(ai_board,opposite,depth-1,original_depth,alpha,beta,new_action)
-                result['path'].insert(0,e)
-                result['move']=new_action
-                if result['score']>score:
-                    score=result['score']
-                    best_result = result
-                    
-                if score >= beta:
-                    return result
-                alpha = max(alpha,score)
+                if result != 'invalid':
+                    try:
+                        result['path'].insert(0,e)
+                    except KeyError as ee:
+                        print 'received emty dict, because '
+                        print 'EVERYTHING'
+                        print ai_board.show()
+                        print "action['origin']",new_action['origin']
+                        print "action['move']",new_action['move']
+                        print "action['path']",new_action['path']
+                        print result
+                        print ee
+                    result['move']=new_action
+                    if result['score']>score:
+                        score=result['score']
+                        best_result = result
+                        
+                    if score >= beta:
+                        return result
+                    alpha = max(alpha,score)
 
         return best_result
 
@@ -180,15 +249,16 @@ class AI():
                 new_action['path']=path+[e[2]]
                 
                 result = self.Value(ai_board,opposite,depth-1,original_depth,alpha,beta,new_action)
-                result['path'].insert(0,e)
-                result['move']=new_action
-                if result['score']<score:
-                    score=result['score']
-                    best_result = result
-                    
-                if score <= alpha:
-                    return result
-                beta = min(beta,score)
+                if result != 'invalid':
+                    result['path'].insert(0,e)
+                    result['move']=new_action
+                    if result['score']<score:
+                        score=result['score']
+                        best_result = result
+                        
+                    if score <= alpha:
+                        return result
+                    beta = min(beta,score)
 
         return best_result
 
@@ -204,8 +274,40 @@ class AI():
         # was new_state = board(boardstate)
         #print 'action',action
         #print self.undo_stack
-        if action['origin'] != '':
-            self.undo_stack.append(ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=0))
+
+        if 1==0 and ai_board.bk == 'c7':
+            print 'EVERYTHING'
+            print ai_board.show()
+            print "action['origin']",action['origin']
+            print "action['move']",action['move']
+            print "action['path']",action['path']
+
+        
+        if action['origin'] != '': #no origin, means no previous move exists
+            #print action['move']
+            
+            # rule out history dependent invalidations: castle and enpassan
+            # it has to be here, since the history will be property of the ai class, and cant be accessed from exec_move
+            if (action['move'][0]=='c' or action['move'][0]=='e') and not self.verified(tcol,action,verbose=0):
+                return 'invalid'
+
+            try:
+                process_move = ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=0)
+            except MoveException as ee:
+                print '<><>',action,'col', tcol,'bk pos', ai_board.bk
+                print 'something went wrong ',ee
+                print ai_board.show()
+                print "action['origin']",action['origin']
+                print "action['move']",action['move']
+                print "action['path']",action['path']
+                print 'retrying'
+                process_move = ai_board.exec_move(ai_board.piece_by_sq(action['origin']),action['move'],verbose=1)
+
+            if process_move != None:
+                self.undo_stack.append(process_move)
+            else:
+                #print 'invalid',action['origin'],action['move']
+                return 'invalid'
         
         if tcol=='w':
             pieces_set=ai_board.whites[:] #[:] because we pop em
@@ -214,11 +316,7 @@ class AI():
             pieces_set=ai_board.blacks[:]
             opposite = 'w'
 
-        if 'Rxd8' in action['path']:
-            print ai_board.show()
-            print "action['origin']",action['origin']
-            print "action['move']",action['move']
-            print "action['path']",action['path']
+        
         
         # then, check if either side is in check >>  sq_in_check(self,sq,by_col,b_state='',verbose=0):
         turn_in_check = False
@@ -251,10 +349,11 @@ class AI():
         expansions = {}
         exp_count = 0
         for p in pieces_set:
-            if p.type=='b': # probably 'b' triggers verbose.... 
-                expansions[p]=ai_board.valids(p,1)
-            else:
-                expansions[p]=ai_board.valids(p)
+            #if p.type=='b': # probably 'b' triggers verbose.... 
+            #    expansions[p]=ai_board.valids(p,1)
+            #else:
+            #    expansions[p]=ai_board.valids(p)
+            expansions[p] = p.expand(ai_board.board)
             exp_count += len(expansions[p])
         
         # if we have reached cutoff depth and the last move has no capture or check:
@@ -263,7 +362,20 @@ class AI():
             result['rem_exp']=exp_count
             #self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',w_in_check,'b+',b_in_check,'|action:',action,'state val',result)
             self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',ai_board.winch,'b+',ai_board.binch,'|action:',action,'state val',result)
-            ai_board.undo_move(self.undo_stack.pop())
+            popped = self.undo_stack.pop()
+            try:
+                ai_board.undo_move(popped)
+            except MoveException as ee:
+                print '<.>',action,'col', tcol,'bk pos', ai_board.bk
+                print 'something went wrong during undo@cutoff ',ee
+                print 'popped',popped
+                print ai_board.show()
+                print "action['origin']",action['origin']
+                print "action['move']",action['move']
+                print "action['path']",action['path']
+                print 'retrying'
+                ai_board.undo_move(popped,verbose=1)
+            
             return result # result = {'move':action,'score':State evaluation,'path':[],'rem_exp': # of possible expansion }
             # this is returned only towards minV/maxV functions
 
@@ -280,7 +392,17 @@ class AI():
             result['score'] = score
             result['rem_exp']=0
             self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',ai_board.winch,'b+',ai_board.binch,'|action:',action,'state val',result)
-            ai_board.undo_move(self.undo_stack.pop())
+            try:
+                ai_board.undo_move(self.undo_stack.pop())
+            except MoveException as ee:
+                print '<:>',action,'col', tcol,'bk pos', ai_board.bk
+                print 'something went wrong during undo@old terminal state ',ee
+                print ai_board.show()
+                print "action['origin']",action['origin']
+                print "action['move']",action['move']
+                print "action['path']",action['path']
+                print 'retrying'
+                ai_board.undo_move(self.undo_stack.pop(),verbose=1)
             return result # this is/(should be) returned only towards minV/maxV functions
 
         # maximizing state
@@ -290,6 +412,32 @@ class AI():
             rez = self.minValue(ai_board,tcol,depth,original_depth,alpha,beta,expansions,action['path'][:])
         # rez === result in terms of structure and expected values :: result = {'move':action,'score':0,'path':[],'rem_exp':-1}
         # might need to adjust path here?
+
+        # new terminal condition is having rez=={} (i.e. when using no prevalidation for expansions...)
+        if rez == {}:
+            # check if mate or stalemate
+            if turn_in_check: 
+                score = 99
+            else:
+                score = 60 # later we need to adjust this depending on whether we want remi
+            #check if mate is for the white
+            if tcol=='w':
+                score=-score
+            result['score'] = score
+            result['rem_exp']=0
+            self.logit(depthindent,'rec:',len(self.evaluated),'turn col:',tcol,'depth:',depth,'w+',ai_board.winch,'b+',ai_board.binch,'|action:',action,'state val',result)
+            try:
+                ai_board.undo_move(self.undo_stack.pop())
+            except MoveException as ee:
+                print '<!>',action,'col', tcol,'bk pos', ai_board.bk
+                print 'something went wrong during undo@new terminal state ',ee
+                print ai_board.show()
+                print "action['origin']",action['origin']
+                print "action['move']",action['move']
+                print "action['path']",action['path']
+                print 'retrying'
+                ai_board.undo_move(self.undo_stack.pop(),verbose=1)
+            return result # this is/(should be) returned only towards minV/maxV functions
 
         if 1==0 and len(self.undo_stack)==0: 
             print 'ai_board', ai_board.show()
@@ -305,7 +453,18 @@ class AI():
         #print 'z rez:', rez
         
         if len(self.undo_stack)>0:
-            ai_board.undo_move(self.undo_stack.pop()) # returns method undo_move from class board
+            try:
+                ai_board.undo_move(self.undo_stack.pop())
+            except MoveException as ee:
+                print '<><>',action,'col', tcol,'bk pos', ai_board.bk
+                print 'something went wrong during undo@recursion exit ',ee
+                print ai_board.show()
+                print "self.undo_stack",self.undo_stack
+                print "action['origin']",action['origin']
+                print "action['move']",action['move']
+                print "action['path']",action['path']
+                print 'retrying'
+                ai_board.undo_move(self.undo_stack.pop())
 
         return rez
         #### - Note - ###
