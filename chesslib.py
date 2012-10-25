@@ -469,8 +469,6 @@ class game():
         # --------- end of while not eksit and mate=='':
         if verbose>0:
             print self.show()
-            print self.white['hist']
-            print self.black['hist']
             self.full_notation = '\n'.join([ str(i+1)+'. '+self.white['hist'][i]+' '+self.black['hist'][i] for i in range(len(self.black['hist']))])+ \
                                  ('\n'+str(len(self.white['hist']))+'. '+self.white['hist'][-1])*(len(self.black['hist'])<len(self.white['hist']))
 

@@ -56,7 +56,6 @@ TODOs:
  - Main
    = add ?resign and ?draw commands
    = figure out a way to do more encapsulation on the classes
-*  = review and adjust naming conventions, clean up of commented out code
    = add ?stats to show mem size (&usage)
    = Savegame. push/pull to text -> easy way to restore last state
      ~ representation should be lib independant i.e. standard algebric notation
